@@ -2,7 +2,7 @@
 
 ## 项目概况
 
-hub 是 **UCode 的中继服务**（每企业一套自建部署）：运营方在后台管理账号与设备，UCode 主动出站长连（WS 隧道）把公网请求回灌到本机服务，后续还要承载模型端点与内置资产下发。方案见 UCode 仓库的 [`plans/hub.md`](https://github.com/lvyueyang/ucode/blob/main/plans/hub.md)。
+hub 是 **UCode 的中继服务**（每企业一套自建部署）：运营方在后台管理账号与设备，UCode 主动出站长连（WS 隧道）把公网请求回灌到本机服务，后续还要承载模型端点与内置资产下发。方案见 UCode 仓库的 [`plans/hub.md`](https://github.com/easyx-dev/ucode/blob/main/plans/hub.md)。
 
 本仓库是**独立 git 仓库**（UCode 侧以 submodule 挂在 `hub/`）：自带 `pnpm-workspace.yaml`、锁文件、`biome.json` 与 CI，克隆后在本仓库根 `pnpm install` 即可开发，不依赖 UCode 仓库的安装与工具链。隧道协议与 UCode 侧各留一份内容相同的副本（本仓库 `packages/protocol` 对 UCode 仓库的 `packages/hub-protocol`），改协议要同时改两处。
 

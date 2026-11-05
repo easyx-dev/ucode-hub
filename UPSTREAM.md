@@ -1,7 +1,7 @@
 # 上游同步记录
 
 hub 由上游基座 `easyx-dev/fsdx` 裁切而来，是它的**下游衍生项目**——hub 自己只做中继
-（方案见 UCode 仓库的 [plans/hub.md](https://github.com/lvyueyang/ucode/blob/main/plans/hub.md)），上游的基建改动按下面的映射吸收。
+（方案见 UCode 仓库的 [plans/hub.md](https://github.com/easyx-dev/ucode/blob/main/plans/hub.md)），上游的基建改动按下面的映射吸收。
 
 ## 上游
 

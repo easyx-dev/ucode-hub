@@ -2,7 +2,7 @@
 
 UCode 的中继服务：运营方在后台管理账号与设备，UCode 主动出站长连（WS 隧道）把公网请求回灌到本机服务，
 后续还要承载模型端点与内置资产下发。每企业一套自建部署，不做多租户。方案见 UCode 仓库的
-[plans/hub.md](https://github.com/lvyueyang/ucode/blob/main/plans/hub.md)。
+[plans/hub.md](https://github.com/easyx-dev/ucode/blob/main/plans/hub.md)。
 
 本仓库是独立 git 仓库（UCode 侧以 submodule 挂在 `hub/`），自带 workspace 清单、锁文件与工具链，
 克隆后在本仓库根 `pnpm install` 即可开发，不依赖 UCode 仓库。
@@ -90,7 +90,7 @@ UCode（地址是 `/d/<设备 id>/`，与 hub 同源，不另外依赖域名解�
 hub 只做中继：UCode 主动出站建连，hub 把公网请求回灌到 UCode 服务层（同一套 `/api/v1` + 事件流），
 只多一个来源标记；因此经 hub 到达 UCode 的请求等同本机 owner 身份，hub 的入口鉴权是唯一门。
 协议边界、设备域与落地阶段见 UCode 仓库的
-[plans/hub.md](https://github.com/lvyueyang/ucode/blob/main/plans/hub.md)。
+[plans/hub.md](https://github.com/easyx-dev/ucode/blob/main/plans/hub.md)。
 
 ## 上游
 

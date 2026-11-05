@@ -2,7 +2,7 @@
 
 > 定位：平台机制类 · 人类阅读
 > 单一事实来源：`app/server/routes/v1/**` 与 `app/server/model-endpoint/**`（端点、转发与限流）、`app/src/services/usage/**` 与 `app/src/db/schema/model-usage.ts`（用量）、`app/src/shared-services/ai/`（厂商配置）
-> 引用关系：← 被 README 文档索引与本页「后台页」引用；→ 引用上述代码单一事实来源，上游厂商口径见 UCode 仓库的 [`plans/hub.md`](https://github.com/lvyueyang/ucode/blob/main/plans/hub.md)
+> 引用关系：← 被 README 文档索引与本页「后台页」引用；→ 引用上述代码单一事实来源，上游厂商口径见 UCode 仓库的 [`plans/hub.md`](https://github.com/easyx-dev/ucode/blob/main/plans/hub.md)
 > 更新触发：端点路径与鉴权、转发与超时口径、限流键与阈值、用量字段、厂商配置结构变更时
 
 中继提供一组 **OpenAI 兼容的模型端点**：客户端（设备或网页会话）用 hub 的身份直接把对话请求打到中继，

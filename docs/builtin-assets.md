@@ -2,7 +2,7 @@
 
 内置资产（技能正文、提示词命令）可以随产品发版，也可以由运营侧从中继下发更新。本页是中继侧的接口与存放约定；
 **下发方向是 UCode 主动出站拉取**，中继不发起连接——中继不可达只是「拿不到更新」，不影响 UCode 启动与装配。
-UCode 侧的比对 / 校验 / 物化流程与生效边界见 UCode 仓库的 [`plans/hub.md`](https://github.com/lvyueyang/ucode/blob/main/plans/hub.md) 的「内置资产云同步」。
+UCode 侧的比对 / 校验 / 物化流程与生效边界见 UCode 仓库的 [`plans/hub.md`](https://github.com/easyx-dev/ucode/blob/main/plans/hub.md) 的「内置资产云同步」。
 
 ## 存放布局
 
@@ -86,5 +86,5 @@ pnpm -F @ucode/hub builtin:publish -- --id review --kind prompt --version 0.2.0 
 **标记不等于生效**：UCode 侧对 `executable: true` 的资产只落盘、不激活，并记一条
 「已下载但未生效（含可执行内容，需显式信任）」的诊断。理由与第三方插件一致——
 命令式钩子、`bin/`、MCP 服务器与 TS 扩展都是以用户权限执行的代码，**来源是运营方并不构成信任依据**；
-签名 + 显式信任是后续加固项（见 [`plans/hub.md`](https://github.com/lvyueyang/ucode/blob/main/plans/hub.md) 的「待定」）。
+签名 + 显式信任是后续加固项（见 [`plans/hub.md`](https://github.com/easyx-dev/ucode/blob/main/plans/hub.md) 的「待定」）。
 v1 只让纯文本与声明式内容（技能正文、提示词）直接生效。

@@ -5,7 +5,7 @@
 > 引用关系：← 被 README 引用；→ 引用 database-design / cache-system / auth-permission-model / deployment-ops / event-tracking / i18n（均只引用不复制）
 > 更新触发：目录分层、基础设施（缓存/埋点/审计/请求上下文）、路由体系变更时
 
-hub 的工程本体基于 TanStack Start（来自上游基座 `easyx-dev/fsdx` 的裁切），内置 RBAC 认证、事件埋点、操作审计、国际化等基础设施。中继定位与方案见 UCode 仓库的 [plans/hub.md](https://github.com/lvyueyang/ucode/blob/main/plans/hub.md)，上游关系见 [UPSTREAM.md](../UPSTREAM.md)。
+hub 的工程本体基于 TanStack Start（来自上游基座 `easyx-dev/fsdx` 的裁切），内置 RBAC 认证、事件埋点、操作审计、国际化等基础设施。中继定位与方案见 UCode 仓库的 [plans/hub.md](https://github.com/easyx-dev/ucode/blob/main/plans/hub.md)，上游关系见 [UPSTREAM.md](../UPSTREAM.md)。
 
 > 除特别说明外，文件路径均相对 `app/` 目录（单仓库多包，业务代码在 `app/`，库包在 `packages/`）。
 

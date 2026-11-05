@@ -7,7 +7,7 @@
 
 ## 1. 项目定位
 
-hub 是 **UCode 的中继服务**：运营方在后台管账号与设备，UCode 主动出站长连（WS 隧道）把公网请求回灌到本机服务（方案见 [plans/hub.md](https://github.com/lvyueyang/ucode/blob/main/plans/hub.md)）。工程本体来自上游基座 `easyx-dev/fsdx` 的裁切，因此 hub 在「衍生协同」关系里处于**下游（衍生项目）**，不再兼任基座模板：
+hub 是 **UCode 的中继服务**：运营方在后台管账号与设备，UCode 主动出站长连（WS 隧道）把公网请求回灌到本机服务（方案见 [plans/hub.md](https://github.com/easyx-dev/ucode/blob/main/plans/hub.md)）。工程本体来自上游基座 `easyx-dev/fsdx` 的裁切，因此 hub 在「衍生协同」关系里处于**下游（衍生项目）**，不再兼任基座模板：
 
 - **上游**：`easyx-dev/fsdx`（全栈工程基座），其基建改动是 hub 的吸收来源；
 - **本仓（hub）**：只做中继相关的改造，保留上游基建，上游自带的业务示例已删除（见 [UPSTREAM.md](./UPSTREAM.md) 的刻意偏离）；
