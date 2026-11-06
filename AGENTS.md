@@ -243,7 +243,7 @@ packages/
 | `pnpm test` | app 的 Vitest 测试 |
 | `pnpm e2e` | Playwright e2e 测试（专用隔离库 `{开发库名}_e2e`，webServer 端口 3100；需先 `pnpm --filter @ucode/hub exec playwright install chromium`） |
 | `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:pull` / `pnpm db:studio` | app 数据库迁移流程 |
-| `/deploy`（`.agents/commands/deploy.md`） | 版本发布：确定 hub 版本（`app/package.json`）→ 按本仓库 `CHANGELOG.md` 记变更 → 打 `v{版本}` tag → 推送 |
+| `/deploy`（`.agents/commands/deploy.md`） | 版本发布：确定 hub 版本（`app/package.json`）→ 按本仓库 `CHANGELOG.md` 记变更 → 打 `v{版本}` tag → 推送（tag 推送即触发 `.github/workflows/image.yml` 构建并推送生产镜像） |
 | `/code-review`（`.agents/commands/code-review.md`） | 全量代码审查：10 维度扫描并输出分级报告 + 一致性/Style Guide |
 
 - 收窄类型检查用 `pnpm -F @ucode/hub typecheck`，收窄 lint 用 `pnpm exec biome check <路径>`；全部包的测试是 `pnpm -r test`；

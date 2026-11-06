@@ -17,6 +17,8 @@
 
 ### 变更
 
+- **[infra] 生产镜像由 CI 构建推送**：`v*` tag 触发 `.github/workflows/image.yml`，推到
+  `ghcr.io/easyx-dev/ucode-hub`（版本 tag + `latest`）；生产部署仓按 `TAG` 拉取，不再需要人工构建推送。
 - **[infra] 数据库由 PostgreSQL 改为 SQLite**：不再需要数据库容器，数据落在应用数据目录的单文件里
   （容器内 `data/data.db`，宿主 `volumes/app/data.db`）；`DATABASE_URL` 现在是库文件路径，
   `DB_POOL_*` 与 `POSTGRES_*` 移除；备份/恢复改为整文件快照，旧 `volumes/db` 不再使用。

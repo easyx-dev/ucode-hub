@@ -14,8 +14,8 @@
 
 ### 镜像来源
 
-- **本仓没有镜像构建流水线**（仓内无 `.gitlab-ci.yml`；CI 仅跑 `.github/workflows/check.yml` 的检查），镜像由交付方自行构建推送
-- 镜像标签与 registry 按交付方定，生产 compose 当前写的是 `ghcr.io/ucode/hub:${TAG}`（`TAG` 默认 `latest`）
+- **由本仓 CI 构建推送**：`.github/workflows/image.yml` 在 `v*` tag 上 `docker build`（上下文是本仓库根，见根 `Dockerfile`）并推到 `ghcr.io/easyx-dev/ucode-hub`，标签为版本 tag（如 `v0.1.0`）与 `latest`
+- 生产 compose 取 `ghcr.io/easyx-dev/ucode-hub:${TAG}`（`TAG` 默认 `latest`），部署配置在独立部署仓 `easyx-dev/ucode-hub-deploy`；包若为 private，生产侧需先 `docker login ghcr.io`
 
 ---
 
@@ -363,7 +363,7 @@ initSystem() 在事务中执行:
 
 ### 本地构建
 
-> 构建上下文是**本仓库根**（Dockerfile 在根下）：
+> 生产版本走 CI（见上「镜像来源」），这里是改完 Dockerfile 后的本机验证路径。构建上下文是**本仓库根**（Dockerfile 在根下）：
 
 ```bash
 # 默认官方源构建

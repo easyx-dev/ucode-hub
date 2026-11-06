@@ -21,3 +21,6 @@ description: 版本发布：联动 commit 流程提交业务变更、确定 hub 
 5. `git add app/package.json CHANGELOG.md && git commit -m "chore(release): hub v{新版本号}"`
 6. 将第 4 步生成的 commit 摘要拼接到 tag message，执行 `git tag -a v{新版本号} -m "chore(release): hub v{新版本号}"$'\n\n'"{commit 摘要}"`
 7. `git push && git push --tags`
+8. **确认镜像产出**：推 tag 会触发 `.github/workflows/image.yml` 构建并推送 `ghcr.io/easyx-dev/ucode-hub:{新版本号}`
+   与 `latest`；用 `gh run list --workflow=image.yml` / `gh run watch` 跟到成功为止——镜像没出来，生产那份
+   `TAG=v{新版本号} ./deploy.sh` 就拉不到

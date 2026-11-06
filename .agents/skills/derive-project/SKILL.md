@@ -21,7 +21,7 @@ description: >
 □ 数据库名：________（当前 app_web；e2e 库自动派生 <库名>_e2e）
 □ e2e 账号邮箱：________（默认 root@example.com / client01@example.com）
 □ 容器名：________（当前 hub-app / hub-db，如 myapp-app / myapp-db）
-□ 镜像名：________（当前 ghcr.io/ucode/hub，按交付方 registry 改）
+□ 镜像名：________（当前 ghcr.io/easyx-dev/ucode-hub，按交付方 registry 改）
 □ 部署路径：________（当前 /opt/hub/）
 □ 站点名：________（系统配置，初始化时填写）
 □ 品牌色：________（默认 admin 棕 #795548 / client 中性灰）
@@ -59,7 +59,7 @@ description: >
 ### Step 3：C 部署面
 
 1. `docker-compose.yml` 与独立部署仓的 `docker-compose.yml`：`container_name`、镜像名（生产编排不在本仓）；
-2. CI：本仓没有镜像构建流水线（仓内无 `.gitlab-ci.yml`），新项目如需接 CI 自行按 `.github/workflows/` 加；
+2. CI：`.github/workflows/` 下有 `check.yml`（检查）与 `image.yml`（`v*` tag 构建推送镜像），新项目改镜像地址与触发条件；
 3. 部署目录（部署脚本里的 `/opt/hub/` 占位，按新项目名与 `DEPLOY_DIR` 改）。
 
 ### Step 4：D 品牌面
