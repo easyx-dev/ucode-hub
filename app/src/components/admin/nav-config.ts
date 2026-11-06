@@ -24,7 +24,6 @@ import {
   StockOutlined,
   TableOutlined,
   TeamOutlined,
-  TranslationOutlined,
 } from "@ant-design/icons";
 import type { ComponentType } from "react";
 
@@ -102,14 +101,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "国际化",
-    items: [
-      { key: "/admin/translations/ui", label: "UI 翻译", icon: GlobalOutlined },
-      {
-        key: "/admin/translations/content",
-        label: "实体翻译",
-        icon: TranslationOutlined,
-      },
-    ],
+    items: [{ key: "/admin/translations/ui", label: "UI 翻译", icon: GlobalOutlined }],
   },
   {
     label: "日志审计",

@@ -2,12 +2,11 @@
  * 系统配置管理：CRUD + 导入导出 + 内存缓存（领域实体唯一归属）
  */
 
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { asc, eq, isNull } from "drizzle-orm";
 import type { z } from "zod";
 import { db } from "#/db/index";
-import { contentTranslation, systemConfig } from "#/db/schema";
-import { configCache, configTranslationCache } from "#/shared-services/config/config.cache";
-import { DEFAULT_LOCALE, type Locale } from "#/shared-services/i18n/i18n.types";
+import { systemConfig } from "#/db/schema";
+import { configCache } from "#/shared-services/config/config.cache";
 import { logger } from "#/shared-services/logger";
 import { PRESET_CONFIGS } from "./config.presets";
 import type { configImportSchema } from "./config.schemas";
@@ -246,45 +245,6 @@ export async function getVisibleConfigRows(): Promise<
   }
   // 敏感配置永不外发客户端
   return list.filter((c) => c.clientVisible && !c.isSecret);
-}
-
-/** 获取系统配置的 content_translation 翻译（按 locale 缓存） */
-export async function getConfigTranslations(locale: Locale): Promise<Record<string, string>> {
-  if (locale === DEFAULT_LOCALE) return {};
-
-  const cached = configTranslationCache.get(locale);
-  if (cached) return cached;
-
-  const translations = await db
-    .select()
-    .from(contentTranslation)
-    .where(
-      and(
-        eq(contentTranslation.entityType, "system_config"),
-        eq(contentTranslation.locale, locale),
-      ),
-    );
-
-  const result: Record<string, string> = {};
-  for (const t of translations) result[t.entityId] = t.value;
-
-  configTranslationCache.set(locale, result);
-  logger.info({ locale, count: translations.length }, "系统配置翻译缓存已加载");
-  return result;
-}
-
-/** 刷新系统配置翻译缓存（管理端编辑翻译后调用） */
-export async function refreshConfigTranslationCache(locale?: Locale): Promise<void> {
-  if (locale) {
-    configTranslationCache.delete(locale);
-    await getConfigTranslations(locale);
-    logger.info({ locale }, "系统配置翻译缓存已刷新");
-  } else {
-    for (const key of configTranslationCache.keys()) {
-      configTranslationCache.delete(key);
-    }
-    logger.info("全部系统配置翻译缓存已清理");
-  }
 }
 
 /** 配置导入数据结构（schema 单一来源，z.infer 派生） */

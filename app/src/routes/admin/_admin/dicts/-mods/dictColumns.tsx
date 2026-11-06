@@ -12,14 +12,9 @@ import {
   TableOperate,
 } from "@ucode/hub-ui-spa/table";
 import { Tag } from "antd";
-import { EditorTypes, FieldTranslationDrawer } from "#/components/admin";
+import { EditorTypes } from "#/components/admin";
 import type { DictItemRecord } from "#/shared-services/dict/dict.server";
 import { isPresetDict } from "./dict.utils";
-
-/** 字典条目可翻译字段定义 */
-const DICT_ITEM_TRANSLATABLE_FIELDS = [
-  { name: "label", label: "标签", valueType: "input" as const },
-];
 
 /**
  * 行展开面板：列表放不下的扩展配置与时间（额外类型 / 额外值 / 颜色 / 创建与更新时间）
@@ -144,7 +139,7 @@ export function dictItemColumns(handlers: DictItemColumnsHandlers) {
       key: "actions",
       fixed: "right" as const,
       // 弹性列：余宽归它，宽度为出现横向滚动时的按钮所需宽
-      width: actionsWidth("编辑", "删除", "翻译"),
+      width: actionsWidth("编辑", "删除"),
       elastic: true,
       render: (_: unknown, record: DictItemRecord) => (
         <TableOperate>
@@ -153,14 +148,6 @@ export function dictItemColumns(handlers: DictItemColumnsHandlers) {
             disabled={!permissions.editItem}
             disabledReason={NO_EDIT_PERMISSION}
           />
-          <TableOperate.Custom>
-            <FieldTranslationDrawer
-              entityType="dict_item"
-              entityId={record.id}
-              fields={DICT_ITEM_TRANSLATABLE_FIELDS}
-              originalValues={{ label: record.label ?? "" }}
-            />
-          </TableOperate.Custom>
           {!isPresetDict(record.dictSlug) && (
             <TableOperate.Delete
               recordName="该条目"

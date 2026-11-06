@@ -30,24 +30,8 @@ const { mockConfigCache } = vi.hoisted(() => {
   };
 });
 
-const { mockConfigTranslationCache } = vi.hoisted(() => {
-  const translationStore = new Map<string, Record<string, string>>();
-  return {
-    mockConfigTranslationCache: {
-      get: vi.fn((k: string) => translationStore.get(k)),
-      set: vi.fn((k: string, v: Record<string, string>) => {
-        translationStore.set(k, v);
-      }),
-      delete: vi.fn((k: string) => translationStore.delete(k)),
-      clear: vi.fn(() => translationStore.clear()),
-      keys: vi.fn(() => Array.from(translationStore.keys())),
-    },
-  };
-});
-
 vi.mock("#/shared-services/config/config.cache", () => ({
   configCache: mockConfigCache,
-  configTranslationCache: mockConfigTranslationCache,
 }));
 
 const { mockDb, mockRows } = vi.hoisted(() => {
@@ -82,11 +66,9 @@ import {
   ensurePresetConfigs,
   getConfig,
   getConfigList,
-  getConfigTranslations,
   getVisibleConfigRows,
   importConfigs,
   loadConfigCache,
-  refreshConfigTranslationCache,
   updateConfig,
   upsertConfig,
 } from "#/shared-services/config/config.server";
@@ -429,29 +411,6 @@ describe("getVisibleConfigRows", () => {
   });
 });
 
-describe("getConfigTranslations", () => {
-  it("默认语言返回空对象", async () => {
-    const result = await getConfigTranslations("zh");
-    expect(result).toEqual({});
-  });
-
-  it("缓存命中直接返回", async () => {
-    mockConfigTranslationCache.set("en", { "c-1": "HUB EN" });
-    const result = await getConfigTranslations("en");
-    expect(result).toEqual({ "c-1": "HUB EN" });
-  });
-
-  it("缓存未命中时查询 DB 并写入缓存", async () => {
-    mockConfigTranslationCache.get.mockReturnValueOnce(undefined);
-    mockRows.mockResolvedValue([{ entityId: "c-1", value: "HUB EN" }]);
-    const result = await getConfigTranslations("en");
-    expect(result).toEqual({ "c-1": "HUB EN" });
-    expect(mockConfigTranslationCache.set).toHaveBeenCalledWith("en", {
-      "c-1": "HUB EN",
-    });
-  });
-});
-
 describe("upsertConfig", () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -549,29 +508,6 @@ describe("updateConfig", () => {
 
     const payload = setMock.mock.calls[0][0];
     expect("value" in payload).toBe(false);
-  });
-});
-
-describe("refreshConfigTranslationCache", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it("指定语言时删除缓存并重新加载", async () => {
-    mockConfigTranslationCache.get.mockReturnValueOnce(undefined);
-    mockRows.mockResolvedValue([]);
-
-    await refreshConfigTranslationCache("en");
-
-    expect(mockConfigTranslationCache.delete).toHaveBeenCalledWith("en");
-    expect(mockConfigTranslationCache.set).toHaveBeenCalled();
-  });
-
-  it("不指定语言时清空全部缓存", async () => {
-    mockConfigTranslationCache.keys.mockReturnValue(["en", "zh"]);
-
-    await refreshConfigTranslationCache();
-
-    expect(mockConfigTranslationCache.delete).toHaveBeenCalledTimes(2);
-    expect(mockDb.select).not.toHaveBeenCalled();
   });
 });
 

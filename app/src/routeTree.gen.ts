@@ -42,7 +42,6 @@ import { Route as AdminAdminOperationLogsIndexRouteImport } from './routes/admin
 import { Route as AdminAdminOperationLogsAnalyticsRouteImport } from './routes/admin/_admin/operation-logs/analytics'
 import { Route as AdminAdminSystemMonitorRouteImport } from './routes/admin/_admin/system/monitor'
 import { Route as AdminAdminTrackQueryRouteImport } from './routes/admin/_admin/track/query'
-import { Route as AdminAdminTranslationsContentRouteImport } from './routes/admin/_admin/translations/content'
 import { Route as AdminAdminTranslationsUiRouteImport } from './routes/admin/_admin/translations/ui'
 import { Route as AdminAdminUsageIndexRouteImport } from './routes/admin/_admin/usage/index'
 import { Route as ApiV1AuthLoginRouteImport } from './routes/api/v1/auth/login'
@@ -229,12 +228,6 @@ const AdminAdminTrackQueryRoute = AdminAdminTrackQueryRouteImport.update({
   path: '/track/query',
   getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminAdminTranslationsContentRoute =
-  AdminAdminTranslationsContentRouteImport.update({
-    id: '/translations/content',
-    path: '/translations/content',
-    getParentRoute: () => AdminAdminRoute,
-  } as any)
 const AdminAdminTranslationsUiRoute =
   AdminAdminTranslationsUiRouteImport.update({
     id: '/translations/ui',
@@ -331,7 +324,6 @@ export interface FileRoutesByFullPath {
   '/admin/operation-logs/analytics': typeof AdminAdminOperationLogsAnalyticsRoute
   '/admin/system/monitor': typeof AdminAdminSystemMonitorRoute
   '/admin/track/query': typeof AdminAdminTrackQueryRoute
-  '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/api/v1/auth/login': typeof ApiV1AuthLoginRoute
   '/api/v1/devices/list': typeof ApiV1DevicesListRoute
@@ -378,7 +370,6 @@ export interface FileRoutesByTo {
   '/admin/operation-logs/analytics': typeof AdminAdminOperationLogsAnalyticsRoute
   '/admin/system/monitor': typeof AdminAdminSystemMonitorRoute
   '/admin/track/query': typeof AdminAdminTrackQueryRoute
-  '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/api/v1/auth/login': typeof ApiV1AuthLoginRoute
   '/api/v1/devices/list': typeof ApiV1DevicesListRoute
@@ -428,7 +419,6 @@ export interface FileRoutesById {
   '/admin/_admin/operation-logs/analytics': typeof AdminAdminOperationLogsAnalyticsRoute
   '/admin/_admin/system/monitor': typeof AdminAdminSystemMonitorRoute
   '/admin/_admin/track/query': typeof AdminAdminTrackQueryRoute
-  '/admin/_admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/_admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/api/v1/auth/login': typeof ApiV1AuthLoginRoute
   '/api/v1/devices/list': typeof ApiV1DevicesListRoute
@@ -478,7 +468,6 @@ export interface FileRouteTypes {
     | '/admin/operation-logs/analytics'
     | '/admin/system/monitor'
     | '/admin/track/query'
-    | '/admin/translations/content'
     | '/admin/translations/ui'
     | '/api/v1/auth/login'
     | '/api/v1/devices/list'
@@ -525,7 +514,6 @@ export interface FileRouteTypes {
     | '/admin/operation-logs/analytics'
     | '/admin/system/monitor'
     | '/admin/track/query'
-    | '/admin/translations/content'
     | '/admin/translations/ui'
     | '/api/v1/auth/login'
     | '/api/v1/devices/list'
@@ -574,7 +562,6 @@ export interface FileRouteTypes {
     | '/admin/_admin/operation-logs/analytics'
     | '/admin/_admin/system/monitor'
     | '/admin/_admin/track/query'
-    | '/admin/_admin/translations/content'
     | '/admin/_admin/translations/ui'
     | '/api/v1/auth/login'
     | '/api/v1/devices/list'
@@ -853,13 +840,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminTrackQueryRouteImport
       parentRoute: typeof AdminAdminRoute
     }
-    '/admin/_admin/translations/content': {
-      id: '/admin/_admin/translations/content'
-      path: '/translations/content'
-      fullPath: '/admin/translations/content'
-      preLoaderRoute: typeof AdminAdminTranslationsContentRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
     '/admin/_admin/translations/ui': {
       id: '/admin/_admin/translations/ui'
       path: '/translations/ui'
@@ -961,7 +941,6 @@ interface AdminAdminRouteChildren {
   AdminAdminOperationLogsAnalyticsRoute: typeof AdminAdminOperationLogsAnalyticsRoute
   AdminAdminSystemMonitorRoute: typeof AdminAdminSystemMonitorRoute
   AdminAdminTrackQueryRoute: typeof AdminAdminTrackQueryRoute
-  AdminAdminTranslationsContentRoute: typeof AdminAdminTranslationsContentRoute
   AdminAdminTranslationsUiRoute: typeof AdminAdminTranslationsUiRoute
   AdminAdminAdminRolesIndexRoute: typeof AdminAdminAdminRolesIndexRoute
   AdminAdminAiProvidersIndexRoute: typeof AdminAdminAiProvidersIndexRoute
@@ -991,7 +970,6 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminOperationLogsAnalyticsRoute: AdminAdminOperationLogsAnalyticsRoute,
   AdminAdminSystemMonitorRoute: AdminAdminSystemMonitorRoute,
   AdminAdminTrackQueryRoute: AdminAdminTrackQueryRoute,
-  AdminAdminTranslationsContentRoute: AdminAdminTranslationsContentRoute,
   AdminAdminTranslationsUiRoute: AdminAdminTranslationsUiRoute,
   AdminAdminAdminRolesIndexRoute: AdminAdminAdminRolesIndexRoute,
   AdminAdminAiProvidersIndexRoute: AdminAdminAiProvidersIndexRoute,

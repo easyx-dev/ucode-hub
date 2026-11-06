@@ -17,7 +17,6 @@ const { mockDb } = vi.hoisted(() => {
     mockDb: {
       query: {
         uiTranslation: q(),
-        contentTranslation: q(),
         adminUser: q(),
         clientUser: q(),
         role: q(),

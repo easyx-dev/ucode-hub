@@ -1,6 +1,6 @@
 /**
  * AI 客户端测试：多厂商（对象形式）配置读取/校验与迁移、resolveProvider/resolveModel 命中规则、
- * provider 按厂商+指纹缓存构建（OpenAI client 复用）、推理兼容适配器构建
+ * OpenAI client 按厂商+指纹缓存构建与复用
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -27,19 +27,15 @@ vi.mock("#/shared-services/logger", () => ({
 
 vi.mock("openai", () => ({ default: MockOpenAI }));
 
-import { OpenAICompatibleChatAdapter } from "@tanstack/ai-openai/compatible";
 import {
   AI_MAX_RETRIES,
   AI_TIMEOUT_MS,
-  getAiAdapter,
-  getAiProvider,
   getAiRawClient,
   readProviderConfig,
   readProviders,
   resolveModel,
   resolveProvider,
 } from "../ai.provider";
-import { ReasoningCompatibleChatAdapter } from "../ai.reasoning-adapter";
 import type { AiProvidersConfig, AiProviderView } from "../ai.schemas";
 
 /** 通用厂商配置（对象形式：key 为厂商 id） */
@@ -207,11 +203,12 @@ describe("readProviderConfig", () => {
   });
 });
 
-describe("getAiProvider", () => {
+describe("getAiRawClient", () => {
   it("按目标厂商构建 OpenAI client 并按「id+指纹」缓存", async () => {
     setConfig(PROVIDERS);
-    const provider = await getAiProvider("moonshot");
-    expect(provider).not.toBeNull();
+    const ready = await getAiRawClient("moonshot");
+    expect(ready?.model).toBe("kimi-k2-0711-preview");
+    expect(ready?.client).toBeDefined();
     expect(MockOpenAI).toHaveBeenCalledTimes(1);
     expect(MockOpenAI).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -223,26 +220,17 @@ describe("getAiProvider", () => {
     );
 
     // 同厂商同配置再次调用不重建 client
-    await getAiProvider("moonshot");
+    await getAiRawClient("moonshot");
     expect(MockOpenAI).toHaveBeenCalledTimes(1);
 
     // 不同厂商各自独立构建
-    await getAiProvider("deepseek");
+    await getAiRawClient("deepseek");
     expect(MockOpenAI).toHaveBeenCalledTimes(2);
-  });
-
-  it("provider 工厂返回推理兼容适配器实例（统一始终用推理子类）", async () => {
-    setConfig(PROVIDERS);
-    const provider = await getAiProvider("deepseek");
-    const adapter = provider!("deepseek-reasoner");
-    expect(adapter).toBeInstanceOf(ReasoningCompatibleChatAdapter);
-    // 仍是 OpenAI 兼容 Chat Completions 适配器，行为与基类一致
-    expect(adapter).toBeInstanceOf(OpenAICompatibleChatAdapter);
   });
 
   it("配置变更时按指纹重建（模型新增/变动）", async () => {
     setConfig(PROVIDERS);
-    await getAiProvider("deepseek");
+    await getAiRawClient("deepseek");
     const changed: AiProvidersConfig = {
       deepseek: {
         ...PROVIDERS.deepseek,
@@ -255,49 +243,8 @@ describe("getAiProvider", () => {
       },
     };
     setConfig(changed);
-    await getAiProvider("deepseek");
+    await getAiRawClient("deepseek");
     expect(MockOpenAI).toHaveBeenCalledTimes(2);
-  });
-
-  it("无可命中厂商时返回 null", async () => {
-    mockGetConfig.mockResolvedValue("{}");
-    expect(await getAiProvider()).toBeNull();
-  });
-});
-
-describe("getAiAdapter", () => {
-  it("用目标厂商默认模型名调用 provider 返回推理兼容 adapter", async () => {
-    setConfig(PROVIDERS);
-    const adapter = await getAiAdapter("moonshot");
-    expect(adapter).toBeInstanceOf(ReasoningCompatibleChatAdapter);
-    // 默认模型为 kimi-k2-0711-preview
-    expect((adapter as { model: string }).model).toBe("kimi-k2-0711-preview");
-  });
-
-  it("显式传模型 id 时用对应模型", async () => {
-    setConfig(PROVIDERS);
-    const adapter = await getAiAdapter("deepseek", "deepseek-reasoner");
-    expect(adapter).toBeInstanceOf(ReasoningCompatibleChatAdapter);
-    expect((adapter as { model: string }).model).toBe("deepseek-reasoner");
-  });
-
-  it("未配置时返回 null", async () => {
-    mockGetConfig.mockResolvedValue("{}");
-    expect(await getAiAdapter()).toBeNull();
-  });
-});
-
-describe("getAiRawClient", () => {
-  it("返回目标厂商的原始 OpenAI 客户端与默认模型，且与 provider 共用同一份缓存", async () => {
-    setConfig(PROVIDERS);
-    const ready = await getAiRawClient("moonshot");
-    expect(ready?.model).toBe("kimi-k2-0711-preview");
-    expect(ready?.client).toBeDefined();
-    expect(MockOpenAI).toHaveBeenCalledTimes(1);
-
-    // provider 路径命中同一缓存槽，不再重建 client
-    await getAiProvider("moonshot");
-    expect(MockOpenAI).toHaveBeenCalledTimes(1);
   });
 
   it("显式模型 id 时用对应模型", async () => {

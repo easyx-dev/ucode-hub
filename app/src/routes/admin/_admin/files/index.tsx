@@ -1,20 +1,19 @@
 /**
  * 文件管理页面：上传、列表、标签、下载、删除、秒传
  */
-import { ClockCircleOutlined, CloudUploadOutlined, EditOutlined } from "@ant-design/icons";
-import { isImageMimeType, isProcessableMimeType } from "@easyx/image-toolkit";
+import { ClockCircleOutlined, CloudUploadOutlined } from "@ant-design/icons";
+import { isImageMimeType } from "@easyx/image-toolkit";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { message } from "@ucode/hub-ui-spa/antd-static";
 import { ProTable } from "@ucode/hub-ui-spa/table";
 import type { UploadProps } from "antd";
-import { Button, Col, Input, Modal, Row, Upload } from "antd";
+import { Col, Input, Modal, Row, Upload } from "antd";
 import { useCallback, useRef, useState } from "react";
 import { AdminFilterItem, AdminFilters, AdminListPage } from "#/components/admin";
 import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
 import type { FileRecord } from "#/services/file/file.server";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import { useListQuery } from "#/utils/use-list-query";
-import { FileImageEditor } from "./-mods/FileImageEditor";
 import { FileTagsModal } from "./-mods/FileTagsModal";
 import { deleteFileSFn, makePermanentSFn } from "./-mods/files.functions";
 import { createFilesColumns, renderFileDetailPanel } from "./-mods/filesColumns";
@@ -41,8 +40,6 @@ function FilesPage() {
   const [keywordInput, setKeywordInput] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [previewFile, setPreviewFile] = useState<FileRecord | null>(null);
-  /** 待编辑图片（非 null 时打开图片编辑器） */
-  const [editingFile, setEditingFile] = useState<FileRecord | null>(null);
   /** 待编辑标签的文件（非 null 时打开标签弹窗） */
   const [taggingFile, setTaggingFile] = useState<FileRecord | null>(null);
 
@@ -147,7 +144,6 @@ function FilesPage() {
   const columns = createFilesColumns(
     {
       onPreview: setPreviewFile,
-      onEdit: setEditingFile,
       onEditTags: setTaggingFile,
       onMakePermanent: handleMakePermanent,
       onDelete: handleDelete,
@@ -249,20 +245,7 @@ function FilesPage() {
         onCancel={() => setPreviewFile(null)}
         width="auto"
         centered
-        footer={
-          previewFile && isProcessableMimeType(previewFile.mimeType) ? (
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={() => {
-                setEditingFile(previewFile);
-                setPreviewFile(null);
-              }}
-            >
-              编辑图片
-            </Button>
-          ) : null
-        }
+        footer={null}
       >
         {previewFile && isImageMimeType(previewFile.mimeType) && (
           <img
@@ -272,15 +255,6 @@ function FilesPage() {
           />
         )}
       </Modal>
-
-      {/* 图片编辑器：裁切与压缩在浏览器完成，保存时写回服务端 */}
-      <FileImageEditor
-        file={editingFile}
-        onClose={() => setEditingFile(null)}
-        onSaved={() => {
-          void list.reload();
-        }}
-      />
     </AdminListPage>
   );
 }

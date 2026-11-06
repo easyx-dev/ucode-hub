@@ -3,14 +3,9 @@
  * 状态 / 布尔用法统一走 StatusTag，时间列走 ProTable valueType，操作列权限置灰
  */
 import { actionsWidth, COLUMN_WIDTH, StatusTag, TableOperate } from "@ucode/hub-ui-spa/table";
-import { EditorTypes, FieldTranslationDrawer, type TranslatableField } from "#/components/admin";
+import { EditorTypes } from "#/components/admin";
 import type { ConfigRecord } from "#/shared-services/config/config.server";
 import { toBool } from "#/utils/bool";
-
-/** 系统配置可翻译字段定义 */
-const CONFIG_TRANSLATABLE_FIELDS: TranslatableField[] = [
-  { name: "value", label: "配置值", valueType: "text" },
-];
 
 /** 敏感配置是否已配置的展示选项 */
 const SECRET_OPTIONS = {
@@ -99,11 +94,9 @@ export function configColumns(options: ConfigColumnsOptions) {
       key: "actions",
       fixed: "right" as const,
       // 弹性列：余宽归它，宽度为出现横向滚动时的按钮所需宽
-      width: actionsWidth("编辑", "删除", "翻译"),
+      width: actionsWidth("编辑", "删除"),
       elastic: true,
       render: (_: unknown, record: ConfigRecord) => {
-        // 敏感配置不参与客户端下发，翻译入口无意义
-        const showTranslation = record.clientVisible === true && !record.isSecret;
         return (
           <TableOperate>
             <TableOperate.Edit
@@ -117,16 +110,6 @@ export function configColumns(options: ConfigColumnsOptions) {
               disabledReason={NO_DELETE_PERMISSION}
               onConfirm={() => options.onDelete(record)}
             />
-            {showTranslation && (
-              <TableOperate.Custom>
-                <FieldTranslationDrawer
-                  entityType="system_config"
-                  entityId={record.id}
-                  fields={CONFIG_TRANSLATABLE_FIELDS}
-                  originalValues={{ value: record.value }}
-                />
-              </TableOperate.Custom>
-            )}
           </TableOperate>
         );
       },

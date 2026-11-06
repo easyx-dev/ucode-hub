@@ -2,18 +2,11 @@
  * 文件管理表格列定义
  * 列表只保留高频列，文件名为主要读取列（取长文本可读下限 340，弹性列让给操作列）；
  * 文件 ID / MIME / 存储路径 / SHA256 / 过期时间 / 更新时间等详情信息收进行展开面板；
- * 操作列不折叠「更多」，下载 / 标签 / 预览 / 编辑图片 / 删除 全部平铺，
+ * 操作列不折叠「更多」，下载 / 标签 / 预览 / 删除 全部平铺，
  * 为此裁掉「文件 ID」列（ID 移入行展开面板）把宽度让给操作项；
  * 标签列内容长度不可控，单元格内单行横向滚动而非换行
  */
-import {
-  DownloadOutlined,
-  EditOutlined,
-  EyeOutlined,
-  SwapOutlined,
-  TagsOutlined,
-} from "@ant-design/icons";
-import { isProcessableMimeType } from "@easyx/image-toolkit";
+import { DownloadOutlined, EyeOutlined, SwapOutlined, TagsOutlined } from "@ant-design/icons";
 import { formatBytes } from "@ucode/hub-lib/format-bytes";
 import {
   actionsWidth,
@@ -41,8 +34,6 @@ const IMAGE_SIZE_TAG_COLOR = "cyan";
 export interface FilesColumnsHandlers {
   /** 打开图片预览 */
   onPreview: (record: FileRecord) => void;
-  /** 打开图片编辑器 */
-  onEdit: (record: FileRecord) => void;
   /** 打开标签编辑弹窗 */
   onEditTags: (record: FileRecord) => void;
   /** 临时文件转永久 */
@@ -107,7 +98,7 @@ function FileTagsCell({ record }: { record: FileRecord }) {
     >
       {/* 触发元素与测量元素分开：弹层需要克隆触发元素，避免与我们的 ref 相互覆盖 */}
       <span className="block min-w-0">
-        {/* 单行横向滚动；`.scrollbar-thin` 为全站统一的细窄滚动条（admin.global.css） */}
+        {/* 单行横向滚动；`.scrollbar-thin` 为全站统一的细窄滚动条（global.css） */}
         <div ref={containerRef} className="scrollbar-thin overflow-x-auto">
           {/* w-max 让内容行按标签实际宽度铺开，成为滚动的被观测对象 */}
           <div ref={contentRef} className="flex w-max items-center gap-1">
@@ -242,10 +233,10 @@ export function createFilesColumns(handlers: FilesColumnsHandlers, options: File
       title: "操作",
       key: "actions",
       fixed: "right" as const,
-      // 5 项平铺（标签常驻，预览 / 编辑图片仅图片类文件出现）
+      // 4 项平铺（标签常驻，预览仅图片类文件出现）
       // 宽度按最大项数实算：列宽必须覆盖图片类文件，否则按钮会溢出到相邻列
       // 弹性列：余宽归它，宽度为出现横向滚动时的按钮所需宽
-      width: actionsWidth("下载", "标签", "预览", "编辑图片", "删除"),
+      width: actionsWidth("下载", "标签", "预览", "删除"),
       elastic: true,
       render: (_: unknown, record: FileRecord) => (
         <TableOperate>
@@ -275,18 +266,6 @@ export function createFilesColumns(handlers: FilesColumnsHandlers, options: File
                 onClick={() => handlers.onPreview(record)}
               >
                 预览
-              </Button>
-            </TableOperate.Custom>
-          )}
-          {isProcessableMimeType(record.mimeType) && (
-            <TableOperate.Custom>
-              <Button
-                type="link"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => handlers.onEdit(record)}
-              >
-                编辑图片
               </Button>
             </TableOperate.Custom>
           )}

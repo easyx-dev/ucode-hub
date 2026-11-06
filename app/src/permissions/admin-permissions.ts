@@ -86,11 +86,6 @@ export const ADMIN_PERMISSIONS = {
   FILE_UPLOAD: definePermission("file:upload", "上传文件", "允许上传新文件"),
   FILE_EDIT: definePermission("file:edit", "编辑文件", "允许修改文件属性（如转为永久存储）"),
   FILE_DELETE: definePermission("file:delete", "删除文件", "允许删除文件"),
-  FILE_PROCESS: definePermission(
-    "file:process",
-    "图片处理",
-    "允许对文件库中的图片进行压缩、裁切并覆盖原图",
-  ),
   // 文件资源管理器
   FILE_EXPLORER_VIEW: definePermission(
     "file-explorer:view",
@@ -141,15 +136,11 @@ export const ADMIN_PERMISSIONS = {
   MESSAGE_SEND: definePermission("message:send", "发送消息", "允许向管理端或客户端用户发送消息"),
   MESSAGE_DELETE: definePermission("message:delete", "删除消息", "允许删除任意用户消息"),
   // 翻译管理
-  TRANSLATION_VIEW: definePermission(
-    "translation:view",
-    "查看翻译",
-    "允许查看 UI 翻译和实体字段翻译",
-  ),
+  TRANSLATION_VIEW: definePermission("translation:view", "查看翻译", "允许查看 UI 翻译"),
   TRANSLATION_MANAGE: definePermission(
     "translation:manage",
     "管理翻译",
-    "允许新增、编辑、删除翻译内容",
+    "允许新增、编辑、删除 UI 翻译",
   ),
   TRANSLATION_EXPORT: definePermission(
     "translation:export",

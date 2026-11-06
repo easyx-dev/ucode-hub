@@ -5,8 +5,6 @@ export { DictSelect } from "./DictSelect";
 export { DictTag } from "./DictTag";
 export type { EditorProps } from "./editor-type";
 export { EditorTypes } from "./editor-type";
-export type { TranslatableField } from "./FieldTranslationDrawer";
-export { FieldTranslationDrawer } from "./FieldTranslationDrawer";
 export { PermissionSelector } from "./PermissionSelector";
 export { RichEditor } from "./RichEditor";
 export { FileUpload, ImageUpload } from "./upload";

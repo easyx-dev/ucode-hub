@@ -163,6 +163,7 @@ const SEED_EN: SeedRow[] = [
   // header / 用户区
   { locale: "en", key: "消息中心", value: "Messages" },
   { locale: "en", key: "退出登录", value: "Log out" },
+  { locale: "en", key: "切换菜单", value: "Toggle menu" },
 
   // forgot password
   { locale: "en", key: "忘记密码", value: "Forgot Password" },
@@ -190,6 +191,7 @@ const SEED_EN: SeedRow[] = [
   { locale: "en", key: "保存", value: "Save" },
   { locale: "en", key: "取消", value: "Cancel" },
   { locale: "en", key: "吊销", value: "Revoke" },
+  { locale: "en", key: "吊销设备", value: "Revoke Device" },
   { locale: "en", key: "确认吊销", value: "Confirm Revoke" },
   {
     locale: "en",

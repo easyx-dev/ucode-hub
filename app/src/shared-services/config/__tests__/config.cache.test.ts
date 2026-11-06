@@ -1,10 +1,10 @@
 /**
- * 系统配置缓存实例测试：验证 configCache / configTranslationCache 挂载于 globalThis，
+ * 系统配置缓存实例测试：验证 configCache 挂载于 globalThis，
  * 跨 bundle（模拟模块重载得到新实例）仍共享同一份缓存，运行时配置变更可被另一侧读到
  */
 import { describe, expect, it, vi } from "vitest";
 
-describe("configCache / configTranslationCache", () => {
+describe("configCache", () => {
   // 模拟跨 bundle 重载：每次重新 import 得到新模块实例，但底层应为同一 globalThis 缓存
   it("模块重载后仍共享同一缓存实例", async () => {
     vi.resetModules();
@@ -14,7 +14,6 @@ describe("configCache / configTranslationCache", () => {
 
     // 新模块实例引用同一 globalThis 单例
     expect(first.configCache).toBe(second.configCache);
-    expect(first.configTranslationCache).toBe(second.configTranslationCache);
 
     // 任一侧写入，另一侧可见
     second.configCache.set("all", [

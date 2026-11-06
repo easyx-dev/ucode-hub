@@ -18,7 +18,7 @@ export {
   trackEventMeta,
   trackPropertyMeta,
 } from "./track";
-export { contentTranslation, uiTranslation } from "./translation";
+export { uiTranslation } from "./translation";
 export {
   type NotifyChannelConfig,
   type UserConfig,
