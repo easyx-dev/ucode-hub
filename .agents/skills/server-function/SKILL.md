@@ -173,7 +173,7 @@ const deleteProductSFn = createServerFn({ method: "POST" })
 |---------|---------|
 | `try/catch` 后 `return null` | 抛出错误，让客户端 `catch` 处理 |
 | 空 `catch` 块 `catch {}` | 至少 `logger.error` 记录日志 |
-| `catch` 后用 `message.error()` | SSR 环境无 DOM，用 `throw` |
+| `catch` 后用 `message.error()` | 服务端无 DOM，用 `throw` |
 
 ```ts
 // ❌ 错误：静默吞掉错误
@@ -249,7 +249,7 @@ if (count !== null) setUnreadCount(count);
 
 - 客户端 function 中间件 `src/middleware/sfn-client-error.ts`（注册于 `start.ts` 的 `functionMiddleware`）给所有客户端 SFn 错误打标，不在此处提示
 - `src/routes/__root.tsx` 安装 `unhandledrejection` 兜底：仅对「已打标且未被任何调用点处理」的 SFn 错误统一友好提示
-- 提示器由两端入口经 `registerSfnNotifier` 注入：管理端 `AdminProvider`（antd `message.error`）、前台 `SSRRootDocument`（sonner `toast.error`）；`sfn-error` 模块自身 UI 无关
+- 提示器由两端入口经 `registerSfnNotifier` 注入：管理端 `AdminProvider`、前台 `ClientProvider`（均为 antd `message.error`）；`sfn-error` 模块自身 UI 无关
 
 ### 错误分级与诊断
 
@@ -270,7 +270,7 @@ if (count !== null) setUnreadCount(count);
 - 诊断日志：客户端对 SFn 错误打 `console.warn`（网络错误 `console.error`），带 SFn 方法名 + 消息；静默失败打 `console.warn`
 - 分类函数 `classifyError` 在 `#/utils/error-utils`（纯函数；auth 由 app 层依据鉴权错误类叠加判定）
 
-> 错误处理链路的实现入口：客户端统一出口 `#/utils/sfn-error`（`registerSfnNotifier` 提示器注册 + `installSfnErrorFallback` 全局兜底）与归一化 `#/utils/error-utils`；提示器分别由 `#/components/admin/AdminProvider`（管理端 antd message）与 `#/components/Document`（前台 sonner toast）注入，详情弹窗为 `#/components/SfnErrorDialog` 的 `SfnErrorDialogHost`（挂载点在 `src/routes/__root.tsx`）。
+> 错误处理链路的实现入口：客户端统一出口 `#/utils/sfn-error`（`registerSfnNotifier` 提示器注册 + `installSfnErrorFallback` 全局兜底）与归一化 `#/utils/error-utils`；提示器分别由 `#/components/admin/AdminProvider` 与 `#/components/client/ClientProvider`（均为 antd message）注入，详情弹窗为 `#/components/SfnErrorDialog` 的 `SfnErrorDialogHost`（挂载点在 `src/routes/__root.tsx`）。
 
 ## Import 边界完整规则
 

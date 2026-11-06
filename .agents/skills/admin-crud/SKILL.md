@@ -1090,18 +1090,7 @@ const [submitting, setSubmitting] = useState(false);
 >
 > 可 `read` 参考的实现：`app/src/utils/use-list-query.ts`、`app/src/components/admin/{AdminListPage,AdminFilters,AdminFormModal,AdminFormDrawer}.tsx`。
 
-## Step 9：可选 —— 添加实体翻译
-
-> 详细规范参考 [i18n](../i18n/SKILL.md)
-
-如果实体字段需要多语言支持，额外执行以下步骤：
-
-1. 在列工厂（`-mods/<moduleName>Columns.tsx`）定义 `<ENTITY>_TRANSLATABLE_FIELDS` 数组
-2. 在 `.server.ts` 添加 `translate<Entity>Record` / `translate<Entity>Records` 函数
-3. 在服务层 / 列表 SFn 中按需返回翻译值
-4. 在列工厂操作列的 `TableOperate.Custom` 内集成 `FieldTranslationDrawer`
-
-## Step 10：编写测试
+## Step 9：编写测试
 
 > 详细规范参考 [test-writing](../test-writing/SKILL.md)
 

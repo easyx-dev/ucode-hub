@@ -12,7 +12,6 @@ description: >
 | 目录 | 定位 | 示例 |
 |------|------|------|
 | `packages/lib/` | 纯逻辑库（同构工具 + 通用非单例基础设施，**可原样移植到其他项目**） | `@ucode/hub-lib/cache`、`@ucode/hub-lib/ms`、`@ucode/hub-lib/semaphore` |
-| `packages/ui-ssr/` | shadcn 基础组件（前台 SSR） | `@ucode/hub-ui-ssr/ui`、`@ucode/hub-ui-ssr/theme` |
 | `packages/ui-spa/` | antd 管理端组件（antd 单实例） | `@ucode/hub-ui-spa/table`、`@ucode/hub-ui-spa/upload` |
 | `src/shared-services/` | 应用级基础设施单例壳 + 系统级共享域（读 env / 引 logger / 需全局态；**非通用共享桶**） | `src/shared-services/logger`、`src/shared-services/jwt`、`src/shared-services/metrics` |
 | `src/services/` | 领域服务层（`server` 业务逻辑 + `schemas` zod + `cache` + `types`）+ 跨端共享 SFn | `src/services/device/`、`src/shared-services/query/`、`src/services/admin-auth/` |
@@ -31,7 +30,7 @@ description: >
 |------|------|
 | 纯逻辑且**可原样移植**（脱离本仓库的框架 / 协议 / 环境仍成立） | `@ucode/hub-lib` |
 | 耦合 app 内部约定的同构工具（无状态或仅轻量模块内状态，client / server 皆可引用） | `src/utils/` |
-| shadcn 组件 / antd 组件 | `@ucode/hub-ui-ssr` / `@ucode/hub-ui-spa` |
+| antd 组件 | `@ucode/hub-ui-spa`（不再有第二套组件库） |
 | AI 富文本工作台 / 图片处理 | 外部 npm 包 `@easyx/ai-rich-editor` / `@easyx/image-toolkit`（不在本仓库维护） |
 | app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态） | `src/shared-services/` |
 | **服务端专属能力**（Node 专有 API / 原生依赖 / 大体积二进制资源） | 仅单一业务消费 → `services/<module>/` 内部文件；跨业务共享 → `src/shared-services/` |
@@ -41,7 +40,7 @@ description: >
 
 `shared-services` **不是「凡多处引用即入」的通用共享桶**：app 同构工具、无状态 helper 一律归 `src/utils/`（如客户端 SFn 错误处理 `#/utils/sfn-error`）。
 
-> 每个子包的导出清单与边界见 [core](../../../packages/lib/README.md) / [ui-ssr](../../../packages/ui-ssr/README.md) / [ui-spa](../../../packages/ui-spa/README.md)。
+> 每个子包的导出清单与边界见 [core](../../../packages/lib/README.md) / [ui-spa](../../../packages/ui-spa/README.md)。
 
 ## 基础设施
 

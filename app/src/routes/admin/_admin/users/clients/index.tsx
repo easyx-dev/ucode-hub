@@ -6,10 +6,10 @@ import { PlusOutlined } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
 import { message } from "@ucode/hub-ui-spa/antd-static";
 import { ProTable, withDisabledReason } from "@ucode/hub-ui-spa/table";
-import { AutofillBlocker } from "@ucode/hub-ui-ssr/form";
 import { Button, Form, Input, Select, Switch } from "antd";
 import type { ChangeEvent } from "react";
 import { useCallback, useState } from "react";
+import { AutofillBlocker } from "#/components/AutofillBlocker";
 import {
   AdminFilters,
   AdminFormModal,

@@ -1,7 +1,7 @@
 /**
  * 「我的用量」汇总卡：请求数、失败数与 token 消耗按同一时间段口径呈现
  */
-import { Card, CardContent, CardHeader, CardTitle } from "@ucode/hub-ui-ssr/ui";
+import { Card, Col, Row, Typography } from "antd";
 import { useTranslation } from "#/components/providers";
 import type { UsageTotals } from "#/services/usage/usage.server";
 import { formatCount } from "./usage.shared";
@@ -35,20 +35,24 @@ export function UsageTotalsCards({ totals }: { totals: UsageTotals }) {
   ];
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <Row gutter={[12, 12]}>
       {items.map((item) => (
-        <Card key={item.label}>
-          <CardHeader className="p-4 pb-2 sm:p-5 sm:pb-2">
-            <CardTitle className="text-xs font-normal text-muted-foreground">
+        <Col key={item.label} xs={24} sm={12} lg={8}>
+          <Card size="small">
+            <Typography.Text type="secondary" className="text-xs">
               {t(item.label)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
-            <p className="text-2xl font-semibold tabular-nums text-foreground">{item.value}</p>
-            {item.hint && <p className="mt-1 text-xs text-muted-foreground">{item.hint}</p>}
-          </CardContent>
-        </Card>
+            </Typography.Text>
+            <Typography.Title level={4} className="!mb-0 !mt-1 tabular-nums">
+              {item.value}
+            </Typography.Title>
+            {item.hint && (
+              <Typography.Text type="secondary" className="text-xs">
+                {item.hint}
+              </Typography.Text>
+            )}
+          </Card>
+        </Col>
       ))}
-    </div>
+    </Row>
   );
 }

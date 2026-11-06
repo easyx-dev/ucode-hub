@@ -1,11 +1,9 @@
 /**
- * 邮箱验证码组件（app 业务壳）：验证码输入 + 获取验证码按钮（弹窗图片验证码）
- * 图片验证码弹窗在 @ucode/hub-ui-ssr/form，此处注入项目 SFn 与消息回调
+ * 邮箱验证码输入：输入框 + 获取验证码按钮（点击弹窗完成图片验证码校验后发送）
  */
-
-import { ImageCaptchaModal } from "@ucode/hub-ui-ssr/form";
-import { Button, Input } from "@ucode/hub-ui-ssr/ui";
+import { Button, Input, Space } from "antd";
 import { useCallback, useState } from "react";
+import { ImageCaptchaModal } from "#/components/ImageCaptchaModal";
 import {
   getImageCaptchaSFn,
   sendCaptchaWithImageVerificationSFn,
@@ -19,19 +17,15 @@ interface CaptchaInputProps {
   value: string;
   /** 邮箱验证码变化回调 */
   onChange: (value: string) => void;
-  /** 消息回调 */
+  /** 状态消息回调（如「已发送」） */
   onMessage: (msg: string) => void;
 }
 
 export function CaptchaInput({ email, value, onChange, onMessage }: CaptchaInputProps) {
   const [modalOpen, setModalOpen] = useState(false);
 
-  /** 获取图片验证码（svg + token）：失败由 callSfn 统一提示 */
-  const getCaptcha = useCallback(async () => {
-    return callSfn(getImageCaptchaSFn());
-  }, []);
+  const getCaptcha = useCallback(() => callSfn(getImageCaptchaSFn()), []);
 
-  /** 校验图片验证码并发送邮箱验证码 */
   const verify = useCallback(
     async (token: string, code: string) => {
       if (!email) {
@@ -48,29 +42,18 @@ export function CaptchaInput({ email, value, onChange, onMessage }: CaptchaInput
 
   return (
     <>
-      {/* 邮箱验证码输入 + 获取验证码按钮 */}
-      <div className="flex gap-2">
+      <Space.Compact block>
         <Input
-          type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           placeholder="邮箱验证码"
           maxLength={6}
-          className="flex-1"
           autoComplete="off"
           aria-label="邮箱验证码"
         />
-        <Button
-          type="button"
-          variant="outline"
-          className="shrink-0"
-          onClick={() => setModalOpen(true)}
-        >
-          获取验证码
-        </Button>
-      </div>
+        <Button onClick={() => setModalOpen(true)}>获取验证码</Button>
+      </Space.Compact>
 
-      {/* 图片验证码弹窗 */}
       <ImageCaptchaModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}

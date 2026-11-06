@@ -4,9 +4,9 @@
 
 ## 组件库选型
 
-- [ ] 管理端（`/admin/*`）用 antd，不混用 shadcn 同类组件
-- [ ] 前台 SSR 用 shadcn/ui，不混用 antd 同类组件
-- [ ] 公共组件归属正确（两端共用偏向前台 shadcn/ui）
+- [ ] 全部界面用 antd 组件，Tailwind 只用于布局 / 间距 / 尺寸
+- [ ] 没有引入第二套组件库（shadcn 已删除）
+- [ ] 通用组件放在 `@ucode/hub-ui-spa`
 
 ## 视觉风格
 
@@ -30,5 +30,5 @@
 ## 错误通知
 
 - [ ] 管理端用 antd `message.error/success`
-- [ ] 前台用 sonner `toast.error/success`
+- [ ] 两端提示都用 antd `message.error/success`
 - [ ] loader/beforeLoad 失败走 `errorComponent`，不调用 DOM API

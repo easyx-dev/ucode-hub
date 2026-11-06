@@ -25,7 +25,6 @@ COPY app/package.json ./app/package.json
 COPY packages/lib/package.json ./packages/lib/package.json
 COPY packages/protocol/package.json ./packages/protocol/package.json
 COPY packages/ui-spa/package.json ./packages/ui-spa/package.json
-COPY packages/ui-ssr/package.json ./packages/ui-ssr/package.json
 
 # pnpm store 走 BuildKit 缓存挂载：不进镜像层，重建时依赖可复用。
 # `--ignore-scripts`：只做构建期用得到的依赖，这个阶段不需要跑依赖自带的安装脚本

@@ -239,7 +239,7 @@ const list = useListQuery<FileRecord, FileFilters>({
 ### 4.2 弹窗与抽屉规范
 
 - **宽度只取档位**：Modal `FORM_MODAL_WIDTH` = `sm 420 / base 520 / wide 640`；Drawer `FORM_DRAWER_WIDTH` = `base 640 / wide 760 / full "60%"`
-- **表单类新建 / 编辑一律走 `AdminFormModal` / `AdminFormDrawer`**；非表单的工具类弹窗（图片预览、图片编辑器、重命名 / 新建目录这类单字段提示、标签编辑）可以直接用 antd `Modal`，但需自带 `destroyOnHidden` 与明确的 `width`（单个字段的小弹窗取 `base 520`；图片 / 文本预览这类需要大面积的可按视口相对给值，如 `min(1280px, 92vw)` / `75%`）
+- **表单类新建 / 编辑一律走 `AdminFormModal` / `AdminFormDrawer`**；非表单的工具类弹窗（图片预览、重命名 / 新建目录这类单字段提示、标签编辑）可以直接用 antd `Modal`，但需自带 `destroyOnHidden` 与明确的 `width`（单个字段的小弹窗取 `base 520`；图片 / 文本预览这类需要大面积的可按视口相对给值，如 `min(1280px, 92vw)` / `75%`）
 - 标题统一 `新建X` / `编辑X`（容器按 `entityName` + `id` 自动生成；标题不能用该模式时用 `title` 显式覆盖，如「重置密码 — admin」）
 - 底部主按钮：传 `formId` 时容器以 `htmlType="submit" form={formId}` 触发该表单提交（表单侧配合 `formId` / `hideActions` / `onSubmittingChange`）；或传 `onOk` 交调用方提交
 - 固定 `destroyOnHidden`：隐藏即卸载，避免校验态残留与 `display:none` 容器内组件拿到 0 尺寸
@@ -253,7 +253,6 @@ const list = useListQuery<FileRecord, FileFilters>({
 - 服务端校验为最终权威（zod 在 `.schemas.ts` 单一来源）；客户端错误统一交 `callSfn` / `sfnUnwrap` 提示，禁止在表单里 `try/catch + message.error`
 - 提交期间主按钮 `loading`，期间禁止重复提交
 - 富文本编辑器高度按其内容区自适应（见 `RichEditor`），禁止在弹层内再套固定高度导致双层滚动
-- 可翻译字段用 `FieldTranslationDrawer`（操作列「翻译」入口）
 
 ## 6. 反馈与状态
 

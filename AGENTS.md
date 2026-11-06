@@ -6,7 +6,7 @@ hub 是 **UCode 的中继服务**（每企业一套自建部署）：运营方�
 
 本仓库是**独立 git 仓库**（UCode 侧以 submodule 挂在 `hub/`）：自带 `pnpm-workspace.yaml`、锁文件、`biome.json` 与 CI，克隆后在本仓库根 `pnpm install` 即可开发，不依赖 UCode 仓库的安装与工具链。隧道协议与 UCode 侧各留一份内容相同的副本（本仓库 `packages/protocol` 对 UCode 仓库的 `packages/hub-protocol`），改协议要同时改两处。
 
-工程本体是上游基座 `easyx-dev/fsdx` 裁切而来的**下游衍生项目**（上游基线、目录与命名映射、刻意偏离见 [`UPSTREAM.md`](./UPSTREAM.md)）；hub 本身**不是**可复用的工程模板。实现沿用上游形态：TanStack Start + Nitro，管理端（`/admin`，SPA + antd）与客户端前台（`/`，SSR + shadcn/ui）双端同构，保留双用户认证 + 双端 RBAC、Server Function 三层分离、内存缓存、`dict`、事件埋点、操作审计、i18n、文件存储、系统配置加密、定时任务、指标与系统监控。
+工程本体是上游基座 `easyx-dev/fsdx` 裁切而来的**下游衍生项目**（上游基线、目录与命名映射、刻意偏离见 [`UPSTREAM.md`](./UPSTREAM.md)）；hub 本身**不是**可复用的工程模板。实现沿用上游形态：TanStack Start + Nitro 的**单页应用**（不做服务端渲染），管理端（`/admin`）与客户端前台（`/`）都在浏览器里渲染、组件库统一 antd + Tailwind，保留双用户认证 + 双端 RBAC、Server Function 三层分离、内存缓存、`dict`、事件埋点、操作审计、i18n（仅前台 UI 文案）、文件存储、系统配置加密、定时任务、指标与系统监控。
 
 ## 工程结构
 
@@ -17,7 +17,7 @@ app/                          # @ucode/hub —— 应用 package（业务代码 
 ├── package.json              # imports #/* → ./src/*
 ├── vite.config.ts / vitest.config.ts / drizzle.config.ts / tsconfig.json
 ├── drizzle/                  # 迁移文件（基线以 src/db/schema/ 为准）
-├── server.ts                 # Nitro server entry（bootstrap + 透传 SSR）
+├── server.ts                 # Nitro server entry（bootstrap + 单页外壳开关 + 埋点）
 ├── public/                   # 静态资源
 └── src/
     ├── bootstrap.ts          # 服务启动初始化（init 注入、预置数据、定时任务、优雅关闭）
@@ -40,13 +40,12 @@ packages/
 │       ├── utils/            # 同构纯工具
 │       ├── cache/            # 缓存抽象（cache/ MemoryCache）
 │       └── infra/            # 通用非单例基础设施（semaphore/task-manager/batch-writer/storage 契约）
-├── ui-ssr/                   # @ucode/hub-ui-ssr —— shadcn 基础组件（ui/ theme/ form 三桶）
 └── ui-spa/                   # @ucode/hub-ui-spa —— antd 管理端组件（antd 为 peerDependency）
 ```
 
 `#/*` 别名仅在 app 内生效（`#/*` → `./src/*`）。跨包引用一律使用 `@ucode/hub-*`（subpath 见各子包 `package.json` 的 exports）。
 
-> 每个子包的导出清单、API 与宿主集成约束见各自 README：[lib](packages/lib/README.md) / [ui-ssr](packages/ui-ssr/README.md) / [ui-spa](packages/ui-spa/README.md)，是包边界的权威文档。
+> 每个子包的导出清单、API 与宿主集成约束见各自 README：[lib](packages/lib/README.md) / [ui-spa](packages/ui-spa/README.md)，是包边界的权威文档。
 >
 > 图片处理套件（`@easyx/image-toolkit`）已抽离为独立发布的 npm 包，不在本仓库内维护，接入约束见其包 README（npm 页）。
 
@@ -59,23 +58,21 @@ packages/
 - **antd 单实例**：`@ucode/hub-ui-spa` 将 antd 声明为 peerDependency，app 提供唯一实例；`antd-static` 桥接在 app `<App>` 上下文内工作
 - **跨包依赖版本单一来源（pnpm catalog）**：跨包共用或由宿主注入的依赖（`react` / `react-dom` / `antd` / `dayjs` / `i18next` / `@ant-design/icons` / `@tanstack/react-router` / `monaco-editor` / `@easyx/editor`）版本统一声明在 `pnpm-workspace.yaml` 的 `catalog`，各包一律以 `"catalog:"` 引用（含 `peerDependencies`），**禁止在包内硬编码版本号**（同一依赖多处声明即会漂移）；仅单个包内部使用的依赖（如 `nodemailer` / `clsx`）照常在包内声明。注意「声明」不等于「多副本」——pnpm 按声明把同一 store 目录 symlink 进各包，realpath 相同、构建期仍是单实例；根 `package.json` 不承载运行期依赖，各包须声明自己用到的运行期依赖（依赖 Node 向上查找到根 `node_modules` 属偶然生效，改 node-linker / 拆包 / 裁剪安装即不可构建）
   - **工具链在本仓库内统一**：Biome 用本仓库根的 [`biome.json`](./biome.json)（已排除生成文件 `**/routeTree.gen.ts`），版本钉在根 `package.json` 的 devDependencies；TypeScript 版本由本仓库 `pnpm-workspace.yaml` 的 `catalog` 统一，各包只写 `"catalog:"`，包内不再声明 TS 版本。注意 `biome.json` **有意保持纯 JSON**：写入 `//` 会让 Biome 静默回落默认配置（`files.includes` 与规则覆盖全部失效），非默认设置的理由记在本文件
-- **外部 npm 包边界**：`@easyx/image-toolkit`（浏览器端图片处理）为独立发布包，样式/UI 自包含
-  - **image-toolkit 根入口零重量依赖**：根入口只导出纯逻辑（服务端用它做魔数嗅探），wasm 引擎与图片编辑内容区一律经 `./ui` 进入；`.output/server` 中不得出现 `.wasm`，可作为回归检查点
-  - **wasm 资源交给宿主打包器**：包内 Worker / wasm 以 `new Worker(new URL(...))` / `new URL(..., import.meta.url)` 静态引用，`vite.config.ts` 需将其加入 `optimizeDeps.exclude`（否则预打包丢失资源）
+- **外部 npm 包边界**：`@easyx/image-toolkit`（浏览器端图片处理）为独立发布包，样式/UI 自包含。本仓库只用其**根入口**（上传时的图片魔数嗅探与类型判定，纯逻辑、无 wasm）；`./ui` 的编辑内容区不在使用范围内，`.output/server` 中不得出现 `.wasm` 仍是回归检查点
 - **UI token 宿主注入**：ui 包组件只写 tailwind 类名，颜色 token 由 app 的 `global.css` 定义；Tailwind 通过 `@source` 扫描包源码类名（外部 npm 包样式自包含，无需 `@source`）
-- **新增共享逻辑的归属决策（按性质判定，不默认 shared-services）**：① 纯逻辑且**可原样移植**（脱离本仓库的框架 / 协议 / 环境仍成立）→ `@ucode/hub-lib`；② 耦合 app 内部约定的同构工具（无状态或仅轻量模块内状态，client / server 皆可引用）→ `src/utils/`；③ shadcn 组件 → `@ucode/hub-ui-ssr`，antd 组件 → `@ucode/hub-ui-spa`，图片处理 → `@easyx/image-toolkit`（外部包）；④ app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态）→ `src/shared-services/`；⑤ **服务端专属能力**（Node 专有 API / 原生依赖 / 大体积二进制资源）：仅单一业务消费 → `services/<module>/` 内部文件，跨业务共享 → `src/shared-services/`；⑥ 业务逻辑 → `app/src/services` 或路由层
+- **新增共享逻辑的归属决策（按性质判定，不默认 shared-services）**：① 纯逻辑且**可原样移植**（脱离本仓库的框架 / 协议 / 环境仍成立）→ `@ucode/hub-lib`；② 耦合 app 内部约定的同构工具（无状态或仅轻量模块内状态，client / server 皆可引用）→ `src/utils/`；③ antd 组件 → `@ucode/hub-ui-spa`（全站唯一组件库），图片处理 → `@easyx/image-toolkit`（外部包）；④ app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态）→ `src/shared-services/`；⑤ **服务端专属能力**（Node 专有 API / 原生依赖 / 大体积二进制资源）：仅单一业务消费 → `services/<module>/` 内部文件，跨业务共享 → `src/shared-services/`；⑥ 业务逻辑 → `app/src/services` 或路由层
 
 ## 技术栈
 
 | 分类 | 技术 | 版本 |
 |------|------|------|
-| 框架 | TanStack Start (SSR) + React | 19 |
+| 框架 | TanStack Start（SPA 模式，不做服务端渲染）+ React | 19 |
 | 路由 | TanStack Router（文件路由） | - |
 | 构建 | Vite | 8 |
 | 语言 | TypeScript（strict） | 7 |
-| 样式 | Tailwind CSS + shadcn/ui (new-york) | 4 |
+| 样式 | Tailwind CSS（布局与间距） | 4 |
 | 国际化 | i18next + react-i18next | - |
-| 管理端 UI | Ant Design | 6 |
+| 组件库 | Ant Design（全站） | 6 |
 | 数据库 | PostgreSQL + Drizzle ORM（node-postgres） | 1.0.0-rc.4 |
 | 校验 | Zod | - |
 | Lint/Format | Biome | 2.5 |
@@ -113,8 +110,8 @@ packages/
 ### 其他基础设施
 
 - **请求 ID 贯通**：`requestIdMiddleware` 注册于 requestMiddleware 首位，透传上游 `x-request-id`（超长截断至 100）或生成 UUID，写入 ALS 上下文并回写响应头；logger mixin 自动注入 requestId 与操作者身份，操作审计落库 `operation_log.request_id`，实现日志与审计全链路追踪
-- **Prometheus 指标**：`src/shared-services/metrics` 注册表挂载于 globalThis（Nitro 入口与 SSR 各 bundle 共享同一实例，`Counter` + `Histogram`，无第三方依赖），预置 `http_requests_total` / `server_function_requests_total` / `server_function_duration_seconds` / `external_calls_total` / `external_call_duration_seconds`；`/api/metrics` 端点（Server Route，无鉴权）输出 Prometheus text 格式，多实例部署需实例层聚合
-- **Nitro server entry**：`app/server.ts` 只承担 bootstrap + HTTP 入口埋点，`fetch` 一律返回 `undefined` 交还请求流转至 TanStack Start SSR；**禁止直接 import `./src/server`**（会绕过 Vite SSR runner 惰性路由机制，导致全部路由 eager 加载，dev 下服务端不兼容的浏览器库（如富文本编辑器）在启动即崩溃）
+- **Prometheus 指标**：`src/shared-services/metrics` 注册表挂载于 globalThis（Nitro 入口与浏览器侧各 bundle 共享同一实例，`Counter` + `Histogram`，无第三方依赖），预置 `http_requests_total` / `server_function_requests_total` / `server_function_duration_seconds` / `external_calls_total` / `external_call_duration_seconds`；`/api/metrics` 端点（Server Route，无鉴权）输出 Prometheus text 格式，多实例部署需实例层聚合
+- **Nitro server entry**：`app/server.ts` 负责置单页外壳开关（`TSS_SHELL`，构建插件只在 dev 注入）、bootstrap 与 HTTP 入口埋点，`fetch` 一律返回 `undefined` 交还请求流转至 TanStack Start 的页面外壳 / Server Function；构建期预渲染外壳时跳过 bootstrap（`TSS_PRERENDERING`），使构建不依赖运行环境
 - **CSRF**：`src/start.ts` 注册 `createCsrfMiddleware`，仅对 ServerFn 生效，校验 Origin / Referer / Sec-Fetch-Site
 - **SF 错误日志**：`sfErrorLogger` 注册于 `functionMiddleware` 自动覆盖所有 SF；鉴权失败（`AdminAuthError`/`ClientAuthError`）记 warn、系统异常记 error（`sanitizeError()` 脱敏），并埋入耗时/结果指标；错误经 `toClientError()` 归一化后重新抛出
 - **Import Protection**：客户端构建禁止导入 `*.server.*` 与服务端专属依赖（清单见 `app/vite.config.ts` 的 `importProtection.client.specifiers`）；服务端禁止 `*.client.*`；type-only import 不触发
@@ -179,15 +176,14 @@ packages/
 
 ## 组件约定
 
-- 管理端页面（`/admin/*`）优先使用 antd（组件索引：https://ant.design/components/overview.md）；前台 SSR 页面优先使用 shadcn/ui（组件索引：https://ui.shadcn.com/docs/components.md）
-- 选型原则：antd 适用数据密集型后台（Form、Table、Modal、Select、Menu）；shadcn/ui 适用展示型前台；同一页面不要混用两套组件库的同类组件（如 Button）
-- 公共组件：仅管理端用 → antd；仅前台用 → shadcn/ui；两端共用 → 偏向前台（shadcn/ui）
+- **组件库只有 antd**（组件索引：https://ant.design/components/overview.md）：页面结构、表单、表格、弹窗、导航一律用 antd 组件；Tailwind 只负责布局、间距、尺寸与少量语义色，不再引入第二套组件库（shadcn 已随 `ui-ssr` 删除）
+- 公共组件只有一处：`@ucode/hub-ui-spa`；两端共用与否不改变归属，写不出 `ui-spa` 里的通用件才考虑放 app 内部
 
 ### 视觉风格与主题约定
 
 - **圆角（以渲染结果为准，由令牌归零）**：项目为直角风格，圆角统一归零——antd 令牌 `borderRadius: 0`；Tailwind 侧由 `--radius-*` 令牌归零（`admin.global.css`/`ssr.global.css`/`shared-tokens.css` 中 `--radius*: 0`），**`rounded-*` 类名本身保留、运行时渲染为 0**；仅圆形元素（头像、徽章、未读红点、加载圈）可用 `rounded-full`；内联 `borderRadius` 一律写 `0`。审样式时按「渲染结果」判，勿仅按类名在场判违规；邮件等不解析令牌的场景可用内联 `0`
-- **颜色**：统一使用语义令牌类（`primary` / `primary-bg` / `primary-fg` / `foreground` / `foreground-secondary` / `foreground-tertiary` / `background` / `background-secondary` / `border` / `divider` / `accent`），禁止硬编码状态色值（`var(--s-*)`）；令牌链路 `--t-*` 基础令牌 → `--s-*` 语义令牌 → `@theme` 映射。**例外**：装饰性品牌视觉（如 AI 功能入口渐变）、`<meta name="theme-color">` SSR 初始值、邮件/富文本内联样式（客户端不解析令牌），属可接受具名色值
-- **主题机制**：每个端对应一个 `ThemePreset`（见 `app/src/theme/themes.ts` 单一事实来源），`data-theme` 承载完整主题名，两端共用 `@custom-variant dark (&:is([data-theme$="-dark"] *))` 暗色变体；antd `colorPrimary` 与 CSS `--s-primary` 同色需双写；`Document.tsx` 内联 init 脚本从注册表推导 storageKey 与 dataTheme，禁止手工双写
+- **颜色**：统一使用语义令牌类（`primary` / `primary-bg` / `primary-fg` / `foreground` / `foreground-secondary` / `foreground-tertiary` / `background` / `background-secondary` / `border` / `divider` / `accent`），禁止硬编码状态色值（`var(--s-*)`）；令牌链路 `--t-*` 基础令牌 → `--s-*` 语义令牌 → `@theme` 映射。**例外**：装饰性品牌视觉（如 AI 功能入口渐变）、`<meta name="theme-color">` 首帧初始值、邮件/富文本内联样式（客户端不解析令牌），属可接受具名色值
+- **主题机制**：每个端对应一个 `ThemePreset`（见 `app/src/theme/themes.ts` 单一事实来源），`data-theme` 承载完整主题名，两端共用 `@custom-variant dark (&:is([data-theme$="-dark"] *))` 暗色变体；antd `colorPrimary` 与 CSS `--s-primary` 同色需双写；根文档的首帧脚本从注册表推导 storageKey 与 dataTheme，禁止手工双写
 - **双主题**：前台与管理端各自独立明暗主题（`client-theme` / `admin-theme` 两个 storageKey），三态（亮/暗/跟随系统）持久化于 localStorage；所有颜色必须走语义令牌保证暗色自适应
 - **品牌色**：管理端为棕色 `#795548`（暗色 `#a1887f`）；前台为中性灰（「文字即主色」）；antd `colorPrimary`/`colorInfo` 由各端 ConfigProvider 从注册表读取
 - **主题切换**：管理端侧边栏主题按钮三态循环（`useAdminTheme()` 的 `setMode`）；前台 `ThemeToggle` 同理
@@ -195,7 +191,7 @@ packages/
 ### 表格操作列
 
 - 所有管理端表格的操作列**必须**使用 `TableOperate` 容器包装（`@ucode/hub-ui-spa/table`），子组件 `Edit` / `Delete` / `Link` / `More` / `Custom`；按钮统一「图标 + 文字」风格
-- **项数 ≤ 4**：低频动作（元数据编辑、图片编辑等）收进 `TableOperate.More`；操作列**必须**显式声明 `width`，用 `actionsWidth("编辑", "删除")` 按文案实算（不要写死数字），并默认标记 `elastic: true` 作余宽去处（档位与公式见 admin-design skill §3.4）。确需 5 项全平铺时（如文件管理页）**先裁掉低价值列把宽度让给操作项**，不得压缩其它列凑数
+- **项数 ≤ 4**：低频动作（元数据编辑、标签编辑等）收进 `TableOperate.More`；操作列**必须**显式声明 `width`，用 `actionsWidth("编辑", "删除")` 按文案实算（不要写死数字），并默认标记 `elastic: true` 作余宽去处（档位与公式见 admin-design skill §3.4）。确需 5 项全平铺时（如文件管理页）**先裁掉低价值列把宽度让给操作项**，不得压缩其它列凑数
 - `TableOperate.Delete` 内置 `Popconfirm`（文案 `"确定删除{recordName}？"`），**不自行吞错**：`onConfirm` 交调用方 `sfnUnwrap` / `callSfn`
 - **无权限时置灰并说明原因**：传 `disabled` + `disabledReason`（如「无『编辑角色』权限」），不要隐藏按钮；服务端 `adminPermGuard` 仍是唯一权威
 - **通用态不进操作列**：上架状态用 `PublishSwitchCell`、排序权重用 `SortOrderCell`，在单元格内直接修改（单字段 SFn + 审计）
@@ -354,7 +350,7 @@ packages/
 
 ### 错误通知分层
 
-管理端（`/admin/*`）使用 antd `message.error/success`，前台 SSR 使用 sonner `toast.error/success`。loader/beforeLoad 失败走 `errorComponent`，不调用 DOM API。客户端对 SFn 的调用统一经 `#/utils/sfn-error` 的 `sfnUnwrap` / `callSfn`（错误出口由两端入口经注册中心注入），未处理的 SFn 错误由全局兜底提示，详见 [server-function](.agents/skills/server-function/SKILL.md)。
+两端都使用 antd `message.error/success`（各自 Provider 注册同一个提示器）。loader/beforeLoad 失败走 `errorComponent`，不调用 DOM API。客户端对 SFn 的调用统一经 `#/utils/sfn-error` 的 `sfnUnwrap` / `callSfn`（错误出口由两端入口经注册中心注入），未处理的 SFn 错误由全局兜底提示，详见 [server-function](.agents/skills/server-function/SKILL.md)。
 
 管理端 `message` / `modal` / `notification` 统一从 `@ucode/hub-ui-spa/antd-static` 导入（`packages/ui-spa/src/antd-static/`），**禁止**静态导入 antd。原因：antd 静态函数会创建独立 React root，脱离 `<StyleProvider layer>` 与 ConfigProvider 上下文，导致其注入的 reset/link 样式未分层、压制所有 `@layer`（把全站 `a` 标签冲成 antd 蓝），且无法继承动态主题。桥接组件 `AntdStaticBridge` 已挂载在管理端 `<App>` 内。
 

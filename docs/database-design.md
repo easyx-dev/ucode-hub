@@ -30,7 +30,6 @@
 | `file` | UUID | `deleted_at` | 文件元数据，`sha256` 索引支持秒传 |
 | `system_config` | UUID | `deleted_at` | 键值配置（`key` 唯一），含 SMTP/AI/站点设置 |
 | `ui_translation` | UUID | — | UI 固定文案翻译，唯一约束 `(locale, key)` |
-| `content_translation` | UUID | — | 实体字段翻译，唯一约束 `(entity_type, entity_id, field_name, locale)` |
 | `captcha_code` | UUID | — | 验证码记录（邮箱/SMS/图形） |
 | `user_config` | UUID | `deleted_at` | 通用用户配置（通知渠道等，JSON 文本 `config`），`user_type` + `user_id` 定位用户，唯一约束 `(user_type, user_id)` |
 
@@ -178,18 +177,6 @@ erDiagram
         text id PK
         text locale
         text key
-        text value
-        text value_type
-        integer created_at
-        integer updated_at
-    }
-
-    content_translation {
-        text id PK
-        text entity_type "索引"
-        text entity_id "索引"
-        text field_name
-        text locale "索引"
         text value
         text value_type
         integer created_at
@@ -344,7 +331,6 @@ erDiagram
 | `dict_item` | `(dict_slug, value)` | 复合唯一 |
 | `system_config` | `key` | 普通唯一 |
 | `ui_translation` | `(locale, key)` | 复合唯一 |
-| `content_translation` | `(entity_type, entity_id, field_name, locale)` | 复合唯一 |
 | `user_config` | `(user_type, user_id)` | 复合唯一 |
 
 ### 软删除策略
@@ -355,7 +341,7 @@ erDiagram
 查询时通过 `notDeleted(col)` 工具函数过滤（`isNull(deleted_at)`）。
 
 以下表不设软删除（写入后不可删除或仅逻辑删除）：
-`track_event`、`track_event_meta`、`track_property_meta`、`operation_log`、`captcha_code`、`ui_translation`、`content_translation`、`model_usage`
+`track_event`、`track_event_meta`、`track_property_meta`、`operation_log`、`captcha_code`、`ui_translation`、`model_usage`
 
 ### 外键关系
 

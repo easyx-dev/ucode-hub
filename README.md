@@ -10,10 +10,9 @@ UCode 的中继服务：运营方在后台管理账号与设备，UCode 主动�
 ## 目录结构
 
 ```
-app/                  # @ucode/hub —— 应用包（TanStack Start + Nitro）：管理端 SPA + 客户端 SSR 前台
+app/                  # @ucode/hub —— 应用包（TanStack Start + Nitro，单页应用）：管理端 + 客户端前台
 packages/lib/         # @ucode/hub-lib —— 纯可复用逻辑库（无 React、零全局态、不读 env/db）
 packages/ui-spa/      # @ucode/hub-ui-spa —— antd 管理端组件
-packages/ui-ssr/      # @ucode/hub-ui-ssr —— shadcn 前台组件
 docs/                 # 机制与设计文档
 .agents/              # 规则、skills、commands、checklists
 Dockerfile            # 生产镜像（构建上下文是本仓库根）

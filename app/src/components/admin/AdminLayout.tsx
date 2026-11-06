@@ -11,11 +11,11 @@ import {
   SunOutlined,
 } from "@ant-design/icons";
 import { Link } from "@tanstack/react-router";
-import type { ThemeMode } from "@ucode/hub-ui-ssr/theme";
 import { Avatar, Badge, Button, Divider, Flex, Popover, Tooltip } from "antd";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { logoutSFn } from "#/services/admin-auth/admin-auth.functions";
 import { getAdminUnreadCountSFn } from "#/services/message/message.functions";
+import type { ThemeMode } from "#/theme/use-theme-mode";
 import { sfnUnwrap } from "#/utils/sfn-error";
 import { useAdminAuth } from "./AdminAuthProvider";
 import { AdminLogo } from "./AdminLogo";

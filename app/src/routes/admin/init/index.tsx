@@ -13,10 +13,10 @@ import {
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { message } from "@ucode/hub-ui-spa/antd-static";
 import { JsonImportButton } from "@ucode/hub-ui-spa/json-import-button";
-import { AutofillBlocker } from "@ucode/hub-ui-ssr/form";
 import { Alert, Button, Divider, Form, Input, InputNumber, Space, Switch } from "antd";
 import { useState } from "react";
 import type { z } from "zod";
+import { AutofillBlocker } from "#/components/AutofillBlocker";
 import { checkInitStatusSFn } from "#/services/init/init.functions";
 import { callSfn } from "#/utils/sfn-error";
 import { type initSchema, initSFn } from "./-mods/init.functions";

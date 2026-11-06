@@ -4,9 +4,9 @@
  */
 import { DeleteOutlined, PlusOutlined, SyncOutlined } from "@ant-design/icons";
 import { message } from "@ucode/hub-ui-spa/antd-static";
-import { AutofillBlocker } from "@ucode/hub-ui-ssr/form";
 import { Button, Card, Col, Divider, Form, Input, InputNumber, Row, Select, Switch } from "antd";
 import { useEffect, useMemo, useState } from "react";
+import { AutofillBlocker } from "#/components/AutofillBlocker";
 import { AdminFormModal, FORM_MODAL_WIDTH } from "#/components/admin";
 import type { AiProviderView } from "#/shared-services/ai/ai.schemas";
 import { fetchProviderModelsSFn } from "#/shared-services/ai/ai-providers.functions";

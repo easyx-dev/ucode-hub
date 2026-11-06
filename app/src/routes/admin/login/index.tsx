@@ -4,9 +4,9 @@
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { message } from "@ucode/hub-ui-spa/antd-static";
-import { AutofillBlocker } from "@ucode/hub-ui-ssr/form";
 import { Button, Form, Input } from "antd";
 import { useState } from "react";
+import { AutofillBlocker } from "#/components/AutofillBlocker";
 import { checkInitStatusSFn } from "#/services/init/init.functions";
 import { callSfn } from "#/utils/sfn-error";
 import { adminLoginSFn } from "./-mods/login.functions";

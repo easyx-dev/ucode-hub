@@ -1,31 +1,30 @@
 /**
- * 统一主题模式管理 hook
- * 基于 useSyncExternalStore 将 localStorage 中的主题模式作为共享外部状态，
- * 保证同一 storageKey 的多个调用点（ThemeToggle / AdminLayout）实时同步，
- * 并支持跨标签页与操作系统主题变化联动。
- * 每个端对应一个主题预设（亮/暗两档具名主题），data-theme 承载完整主题名
- * （预设定义见 app 的 theme/themes.ts）。
+ * 主题模式管理：亮/暗/跟随系统三态，落实为 `data-theme` 属性 + antd 主题算法输入
+ * 以 localStorage 作为共享外部状态，同一 storageKey 的多个调用点实时同步，
+ * 并联动跨标签页与操作系统主题变化。预设本身见 ./themes.ts。
  */
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 
-/** 具名主题方案：dataTheme 须与对应 global.css 主题块选择器一致 */
-export interface ThemeScheme {
+/** 具名主题方案：dataTheme 须与 global.css 主题块选择器一致 */
+export type ThemeScheme = {
   /** data-theme 属性值，须与 CSS 主题块选择器一致 */
   dataTheme: string;
   isDark: boolean;
   /** antd ConfigProvider colorPrimary，须与 CSS `--s-primary` 同色 */
   antdColorPrimary: string;
-  /** 浏览器 UI 主题色（地址栏等），须与对应 global.css `--s-surface` 同色，驱动 `<meta name="theme-color">` */
+  /** 主色底上的文字色（antd `colorTextLightSolid`）：主色偏亮时用深色字，否则白字看不清 */
+  antdPrimaryText: string;
+  /** 浏览器 UI 主题色（地址栏等），须与对应全局样式 `--s-surface` 同色 */
   themeColor: string;
-}
+};
 
-/** 主题预设：一端（管理端/前台）的明暗两档主题 */
-export interface ThemePreset {
+/** 主题预设：一端（管理端 / 前台）的明暗两档主题 */
+export type ThemePreset = {
   /** localStorage 明暗模式键名 */
   storageKey: string;
   light: ThemeScheme;
   dark: ThemeScheme;
-}
+};
 
 /** 主题明暗模式 */
 export type ThemeMode = "light" | "dark" | "auto";
@@ -38,7 +37,7 @@ function getStoredMode(key: string): ThemeMode {
     const stored = localStorage.getItem(key);
     if (stored === "light" || stored === "dark" || stored === "auto") return stored;
   } catch {
-    /* SSR 环境忽略 */
+    // 隐私模式等场景下 localStorage 不可用，回退跟随系统
   }
   return "auto";
 }
@@ -70,40 +69,46 @@ function subscribeTheme(preset: ThemePreset, callback: () => void) {
 
 /** 订阅操作系统暗色偏好变化（auto 模式下需要联动） */
 function subscribeMedia(callback: () => void) {
-  const mq = window.matchMedia(DARK_MEDIA_QUERY);
-  mq.addEventListener("change", callback);
-  return () => mq.removeEventListener("change", callback);
+  const mediaQuery = window.matchMedia(DARK_MEDIA_QUERY);
+  mediaQuery.addEventListener("change", callback);
+  return () => mediaQuery.removeEventListener("change", callback);
 }
 
 function getMediaSnapshot() {
   return window.matchMedia(DARK_MEDIA_QUERY).matches;
 }
 
-/**
- * 应用主题到 DOM：两端统一使用 data-theme 属性（值为完整主题名，见主题注册表）。
- * 主题名由 themes.ts 注册表与 global.css 主题块共同约定。
- */
-function applyThemeToDom(mode: ThemeMode, preset: ThemePreset, prefersDark: boolean) {
-  const resolvedDark = mode === "auto" ? prefersDark : mode === "dark";
-  const scheme = resolvedDark ? preset.dark : preset.light;
-  document.documentElement.setAttribute("data-theme", scheme.dataTheme);
-  document.documentElement.style.colorScheme = resolvedDark ? "dark" : "light";
+/** 主题名与明暗判定：两端的 data-theme 值由各自预设给出，不在这里拼字符串 */
+function resolveScheme(mode: ThemeMode, preset: ThemePreset): ThemeScheme {
+  const isDark = mode === "auto" ? getMediaSnapshot() : mode === "dark";
+  return isDark ? preset.dark : preset.light;
+}
 
-  // 同步浏览器 UI 主题色（地址栏等），跟随当前明暗主题
+/** 应用主题到 DOM：data-theme 承载完整主题名，并同步浏览器 UI 主题色 */
+export function applyThemeToDom(mode: ThemeMode, preset: ThemePreset) {
+  const scheme = resolveScheme(mode, preset);
+  document.documentElement.setAttribute("data-theme", scheme.dataTheme);
+  document.documentElement.style.colorScheme = scheme.isDark ? "dark" : "light";
+
   const themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   if (themeColorMeta) {
     themeColorMeta.setAttribute("content", scheme.themeColor);
   }
 }
 
+/** 读取当前持久化模式（供首帧脚本以外的场景复用） */
+export function readStoredThemeMode(preset: ThemePreset): ThemeMode {
+  return getStoredMode(preset.storageKey);
+}
+
 /**
- * 统一主题模式 hook
- * @param preset 主题预设（storageKey + 亮暗两档，见 app 的 theme/themes.ts）
+ * 主题模式 hook
+ * @param preset 主题预设（storageKey + 亮暗两档，见 ./themes.ts）
  * @returns mode 明暗三态、scheme 当前主题方案（含 dataTheme 与 antd 主色）
  */
 export function useThemeMode(preset: ThemePreset) {
   const mode = useSyncExternalStore(
-    (cb) => subscribeTheme(preset, cb),
+    (callback) => subscribeTheme(preset, callback),
     () => getStoredMode(preset.storageKey),
     () => "auto" as ThemeMode,
   );
@@ -114,24 +119,16 @@ export function useThemeMode(preset: ThemePreset) {
       try {
         localStorage.setItem(preset.storageKey, newMode);
       } catch {
-        /* ignore */
+        // 写不进去也不影响本次会话的显示：下面仍会通知各实例重读（读到旧值即保持原样）
       }
       notifyThemeChange();
     },
     [preset.storageKey],
   );
 
-  // 同步主题到 DOM：多实例应用同一值是幂等操作。
-  // 直接读取 localStorage/媒体查询的最新值应用，而非使用 effect 闭包里的快照——
-  // SSR 前台水合期间 useSyncExternalStore 首帧返回服务端默认值，若用默认值应用会
-  // 短暂覆盖 Document init 脚本已设置好的首帧主题（管理端包在 ClientOnly 内不受影响）。
-  // 依赖里的 mode/prefersDark 只作为重放触发源，effect 内改读最新持久化值。
+  // 落盘的模式可能被其他标签页改过，effect 内重读最新值再应用，避免闭包里的旧快照覆盖它
   useEffect(() => {
-    applyThemeToDom(
-      getStoredMode(preset.storageKey),
-      preset,
-      window.matchMedia(DARK_MEDIA_QUERY).matches,
-    );
+    applyThemeToDom(getStoredMode(preset.storageKey), preset);
   }, [mode, prefersDark, preset]);
 
   const isDark = mode === "auto" ? prefersDark : mode === "dark";

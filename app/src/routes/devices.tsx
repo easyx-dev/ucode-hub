@@ -3,8 +3,9 @@
  * 未登录跳登录页；改名与吊销在卡片内就地完成（失败由统一出口提示）
  */
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { message } from "@ucode/hub-ui-spa/antd-static";
+import { Empty, Typography } from "antd";
 import { useState } from "react";
-import { toast } from "sonner";
 import { useTranslation } from "#/components/providers";
 import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
 import type { DeviceListItem } from "#/services/device/device.server";
@@ -39,7 +40,7 @@ function DevicesPage() {
   const handleRename = async (device: DeviceListItem, name: string): Promise<boolean> => {
     const [, err] = await sfnUnwrap(renameMyDeviceSFn({ data: { id: device.id, name } }));
     if (err) return false;
-    toast.success(t("设备已改名"));
+    message.success(t("设备已改名"));
     await reload();
     return true;
   };
@@ -47,24 +48,24 @@ function DevicesPage() {
   const handleRevoke = async (device: DeviceListItem): Promise<boolean> => {
     const [, err] = await sfnUnwrap(revokeMyDeviceSFn({ data: { id: device.id } }));
     if (err) return false;
-    toast.success(t("设备已吊销"));
+    message.success(t("设备已吊销"));
     await reload();
     return true;
   };
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
+    <main className="mx-auto max-w-3xl px-4 py-10 sm:py-12">
       <header className="mb-6 sm:mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+        <Typography.Title level={2} className="!mb-1">
           {t("我的设备")}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground sm:mt-2">
+        </Typography.Title>
+        <Typography.Text type="secondary">
           {t("共 {{total}} 台设备", { total: devices.length })}
-        </p>
+        </Typography.Text>
       </header>
 
       {devices.length === 0 ? (
-        <div className="py-16 text-center text-sm text-muted-foreground">{t("暂无设备")}</div>
+        <Empty description={t("暂无设备")} className="py-16" />
       ) : (
         <div className="space-y-3">
           {devices.map((device) => (

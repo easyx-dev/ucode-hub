@@ -39,7 +39,7 @@ app/server.ts (Nitro entry)
     │   ├── 注册 unhandledRejection 处理器 → logger.fatal + exit(1)
     │   └── 注册 SIGTERM/SIGINT/SIGQUIT 处理器 → 缓冲刷入（含超时保护）
     │
-    └── TanStack Start SSR fetcher            # src/server.ts
+    └── TanStack Start 页面外壳 + SFn           # src/server.ts
         └── handler.fetch(request)
             匹配路由 → 直接响应（页面 / Server Function / Server Route）
             未匹配 → 返回 undefined → Nitro 继续处理静态资源等
@@ -56,7 +56,7 @@ Nitro server routes / middleware（`app/server/**`，先于 TanStack 匹配）
     ├── WS 升级到 /api/v1/tunnel → 隧道宿主（设备出站长连）
     └── Host = <设备 id>.<HUB_BASE_DOMAIN> 或路径 /d/<设备 id>/… → ingress 回灌（子域形态未配父域时不生效）
     ↓ 都不是
-TanStack Start SSR / Server Functions
+TanStack Start 页面外壳 / Server Functions
     ├── /health（Server Route handler，无鉴权）→ 健康检查 { status, uptime }
     └── /api/metrics（Server Route handler，无鉴权）→ Prometheus 文本
 ```
@@ -330,7 +330,7 @@ process.on("SIGQUIT", gracefulShutdown);
 
 - **架构假设单实例**：内存缓存、埋点频控、`BatchWriter` 缓冲、本地文件存储、cron 定时任务均为进程内/本机实现，多实例部署会导致缓存不一致、定时任务重复执行、埋点缓冲各实例分散。
 - **崩溃丢数据窗口**：埋点事件与操作日志的 `BatchWriter` 缓冲（5 秒 / 100 条窗口）在进程被 kill -9 或崩溃时丢失；优雅关闭（SIGTERM/SIGINT/SIGQUIT）会强制刷新。
-- **fire-and-forget 通知不持久**：邮件 / 短信 / AI 翻译为触发即忘，无持久队列，进程退出即丢失未完成的发送任务。
+- **fire-and-forget 通知不持久**：邮件 / 短信为触发即忘，无持久队列，进程退出即丢失未完成的发送任务。
 - **扩容路径**：真正横向扩容前需先外部化状态——Redis 承载缓存与分布式限流、消息队列承载埋点/任务投递、对象存储承载文件、集中式日志。
 
 ---

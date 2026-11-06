@@ -4,12 +4,12 @@
 import { LockOutlined, MailOutlined, ReloadOutlined } from "@ant-design/icons";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { message } from "@ucode/hub-ui-spa/antd-static";
-import { AutofillBlocker } from "@ucode/hub-ui-ssr/form";
 import type { InputRef } from "antd";
 import { Button, Form, Input, Modal } from "antd";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { z } from "zod";
+import { AutofillBlocker } from "#/components/AutofillBlocker";
 import { getCurrentAdminSFn } from "#/services/admin-auth/admin-auth.functions";
 import {
   getImageCaptchaSFn,

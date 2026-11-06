@@ -20,7 +20,7 @@ hub 由上游基座 `easyx-dev/fsdx` 裁切而来，是它的**下游衍生项�
 | `app/` | `app/` |
 | `packages/lib/` | `packages/lib/` |
 | `packages/ui-spa/` | `packages/ui-spa/` |
-| `packages/ui-ssr/` | `packages/ui-ssr/` |
+| `packages/ui-ssr/` | 不吸收（本仓已删除，全站统一 antd） |
 | 根编排脚本（dev / build / test / check …） | `package.json`（`pnpm --filter @ucode/hub …` 转发）+ `check` |
 | `README.md` / `docs/` / `.agents/` | 同名路径（均在本仓库根） |
 | `.gitlab-ci.yml`、部署子模块 | 不在本仓；本仓 CI 见 `.github/workflows/check.yml`，部署在独立仓 `easyx-dev/ucode-hub-deploy` |
@@ -32,7 +32,7 @@ hub 由上游基座 `easyx-dev/fsdx` 裁切而来，是它的**下游衍生项�
 | `@fsdx/web` | `@ucode/hub` |
 | `@fsdx/lib` | `@ucode/hub-lib` |
 | `@fsdx/ui-spa` | `@ucode/hub-ui-spa` |
-| `@fsdx/ui-ssr` | `@ucode/hub-ui-ssr` |
+| `@fsdx/ui-ssr` | 不适用（组件库统一 antd） |
 | 包名前缀 `@fsdx/*` | `@ucode/hub-*` |
 | 容器 `fsdx-app` / `fsdx-db` | `hub-app` / `hub-db` |
 | 部署目录 `/opt/fsdx-web` | `/opt/hub` |
@@ -48,6 +48,9 @@ hub 由上游基座 `easyx-dev/fsdx` 裁切而来，是它的**下游衍生项�
   （改一处规则时两边一起改），但各是各的文件，不存在继承关系。
 - **依赖版本走本仓 catalog**：跨包共用的依赖一律 `"catalog:"`，不照搬上游包内的版本号。
 - **Cookie 名带项目前缀**：见上表命名映射（同域下多套系统共存时靠前缀区分登录态）。
+- **单页应用 + 全站 antd**：不做服务端渲染（TanStack Start 的 SPA 模式，页面请求只回外壳），
+  前台也改用 antd + Tailwind，`packages/ui-ssr`（shadcn 组件库）与其依赖（radix / cva / embla / sonner）整体删除；
+  上游对 `ui-ssr` 的改动不吸收，也不再新增第二套组件库。
 - **测试脚本显式 `NODE_ENV=test`**：本机 / 生产 shell 常见 `NODE_ENV=production`，会让 react 走 production 构建、
   `@testing-library` 的 `act` 失效，故写死在 `app/package.json` 的 `test` 脚本里。
 - **删除上游的示例业务**：上游自带的 `news`（表 / 服务 / 前台页 / 管理页 / 权限码 / 菜单与文案）与 `/admin/demo`

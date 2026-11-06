@@ -15,8 +15,8 @@ hub 的工程本体基于 TanStack Start（来自上游基座 `easyx-dev/fsdx` �
 ┌─────────────────────────────────────────────────────────────────────┐
 │                          浏览器                                     │
 │      ┌──────────────────┐      ┌──────────────────────────┐        │
-│      │   /admin/* (SPA)  │      │    /* (SSR 前台)          │        │
-│      │   管理端 (antd)    │      │   客户端 (shadcn/ui)      │        │
+│      │   /admin/*        │      │    /*                    │        │
+│      │   管理端 (antd)    │      │   客户端 (antd)           │        │
 │      └────────┬─────────┘      └───────────┬──────────────┘        │
 └───────────────┼────────────────────────────┼────────────────────────┘
                 │                            │
@@ -25,7 +25,7 @@ hub 的工程本体基于 TanStack Start（来自上游基座 `easyx-dev/fsdx` �
 │               │   bootstrap() + 指标埋点     │                        │
 │               │                            │                        │
 │  ┌────────────▼────────────────────────────▼──────────────────┐    │
-│  │                TanStack Start (SSR + Server Functions)     │    │
+│  │          TanStack Start (单页外壳 + Server Functions)       │    │
 │  │  Server Route handler（无鉴权）：/health、/api/metrics       │    │
 │  ┌────────────▼──────┐  ┌──────────────────▼───────────────┐  │    │
 │  │  requestMiddleware │  │  requestMiddleware                │  │    │
@@ -68,17 +68,19 @@ hub 的工程本体基于 TanStack Start（来自上游基座 `easyx-dev/fsdx` �
 
 ## 核心设计决策
 
-### 1. 双端同构架构
+### 1. 双端单页应用
 
-同一套 TanStack Start 服务同时承载**管理端 SPA** 和**客户端 SSR 前台**：
+同一套 TanStack Start 服务（SPA 模式，**不做服务端渲染**）同时承载管理端与客户端前台：页面请求只回一份空外壳，
+路由匹配、数据加载与渲染都在浏览器里完成；Server Function 与 Server Route 仍由 Nitro 提供。
 
 | 维度 | 管理端 (`/admin/*`) | 客户端前台 (`/*`) |
 |------|---------------------|-------------------|
-| 渲染模式 | SPA (`ssr: false`) | SSR |
-| UI 组件库 | Ant Design 6 | shadcn/ui + Tailwind |
+| 渲染模式 | 浏览器渲染（同一份 SPA 外壳） | 浏览器渲染（同一份 SPA 外壳） |
+| UI 组件库 | Ant Design 6 + Tailwind | Ant Design 6 + Tailwind |
+| 主题预设 | `admin-brown-*` | `client-neutral-*` |
 | 认证方式 | `adminPermGuard` 中间件 | `beforeLoad` 调用 `getCurrentClientSFn` |
 | Cookie | `hub_admin_token` | `hub_client_token` |
-| 错误通知 | antd `message.error` | sonner `toast.error` |
+| 错误通知 | antd `message.error` | antd `message.error` |
 
 ### 2. 服务层与路由层分离（SFn 就近路由）
 
@@ -106,12 +108,12 @@ src/routes/**/-mods/          # 路由层：UI 组件 + 就近的 SFn
 ### 3. 路由分层
 
 ```
-__root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRootDocument / SSRRootDocument
-├── 前台（SSR）               # / · /about · /devices · /messages · /login · /register · /forgot-password
+__root.tsx                    # 单页外壳（HTML shell），按 pathname 前缀渲染管理端 / 前台的 Provider 树
+├── 前台                       # / · /about · /devices · /messages · /login · /register · /forgot-password
 ├── /file/r/$id               # 文件读取路由（公共访问 + 同源校验，inline 预览/打开）
 ├── /api/metrics              # Prometheus 指标端点（Server Route handler，无鉴权）
-└── admin.tsx                 # 管理端 SPA 根（SSR=false）；admin/login · admin/init · admin/forgot-password 无布局外壳
-    └── admin/_admin.tsx      # 管理端鉴权布局（beforeLoad + SSR=false）
+└── admin.tsx                 # 管理端根；admin/login · admin/init · admin/forgot-password 无布局外壳
+    └── admin/_admin.tsx      # 管理端鉴权布局（beforeLoad）
         ├── 仪表盘 / 用户（admins · clients）/ 角色（admin-roles · client-roles）
         ├── dicts · config · files · file-explorer · logs · operation-logs
         └── ai-providers · translations · track · messages · system（系统监控）
@@ -187,14 +189,13 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 
 ## 目录职责
 
-目录层级与各目录职责见 [AGENTS.md「工程结构」](../AGENTS.md)（唯一目录树）与「包边界约定」章节；跨目录依赖遵循 [AGENTS.md「Server Function 依赖方向」](../AGENTS.md) 硬规则（`routes → services → (lib 基础库) → db`），缓存实例归属与可导入方约束见「内存缓存约定」。包级导出清单与集成约束见各子包 README（[lib](../packages/lib/README.md) / [ui-ssr](../packages/ui-ssr/README.md) / [ui-spa](../packages/ui-spa/README.md)）；图片处理（`@easyx/image-toolkit`）为外部 npm 包，约束见其 npm 包 README。
+目录层级与各目录职责见 [AGENTS.md「工程结构」](../AGENTS.md)（唯一目录树）与「包边界约定」章节；跨目录依赖遵循 [AGENTS.md「Server Function 依赖方向」](../AGENTS.md) 硬规则（`routes → services → (lib 基础库) → db`），缓存实例归属与可导入方约束见「内存缓存约定」。包级导出清单与集成约束见各子包 README（[lib](../packages/lib/README.md) / [ui-spa](../packages/ui-spa/README.md)）；图片处理（`@easyx/image-toolkit`）为外部 npm 包，约束见其 npm 包 README。
 
 ## 相关文档
 
 | 文档 | 说明 |
 |------|------|
 | [@ucode/hub-lib README](../packages/lib/README.md) | @ucode/hub-lib 导出清单与边界 |
-| [@ucode/hub-ui-ssr README](../packages/ui-ssr/README.md) | @ucode/hub-ui-ssr 组件清单与集成约定 |
 | [@ucode/hub-ui-spa README](../packages/ui-spa/README.md) | @ucode/hub-ui-spa 组件清单与集成约定 |
 | [认证与权限](auth-permission-model.md) | 双用户体系、RBAC、JWT、中间件链路 |
 | [数据库设计](database-design.md) | 表清单、ER 图、列命名约定、约束汇总 |

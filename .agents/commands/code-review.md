@@ -35,10 +35,10 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
   - `模块名.类型.ts`：kebab（`devices.functions.ts` / `dict.utils.ts`），禁 camelCase（如 `dictUtils.ts` / `fileExplorerUtils.ts`）
   - `xxxColumns.tsx`（列定义）与 `PascalCase.tsx`（路由级组件，`DictFormModal.tsx`）：为**认可例外**，不按 kebab 要求，逐类标注在豁免清单
 - **三层分离（硬规则）**：`.server.ts`（服务逻辑，禁止 `SFn` 后缀）/`.functions.ts`（SFn 包装，**必须** `SFn` 后缀）/`.schemas.ts`（zod 单一来源）。依赖单向 `routes → services → (lib/db)`；`services/**` 禁止 import `routes/**`；`.server.ts` 禁止 import `.functions.ts`；路由/组件禁止直接 import `.server.ts`；SFn 必须 `createServerFn({ method }).validator(schema)`，调用方 `{ data: ... }` 传参。
-- **组件命名**：`components/admin/`（antd 数据密集）、`components/client/`（shadcn 展示）、`components/providers/`（global-store/i18n-context）。Props 接口必须 `XxxProps`（禁止裸 `Props`）；布尔 Props `is/has/should` 前缀；对外回调 `onXxx`、内部实现 `handleXxx`；Hook 统一 `useXxx`。
+- **组件命名**：`components/admin/`（antd 数据密集）、`components/client/`（antd 展示）、`components/providers/`（antd 装配/global-store/i18n-context）。Props 接口必须 `XxxProps`（禁止裸 `Props`）；布尔 Props `is/has/should` 前缀；对外回调 `onXxx`、内部实现 `handleXxx`；Hook 统一 `useXxx`。
 - **管理端表格操作列必须用 `TableOperate` 容器**，操作按钮统一「图标 + 文字」，`Delete` 内置信 `Popconfirm`。
 - **主题/样式（以渲染结果为准）**：颜色仅语义令牌（`var(--s-*)`），禁止硬编码状态色；**圆角由 `--radius-*` 令牌归零**——`rounded-*` 类名本身允许，只要最终渲染为 0，仅 `rounded-full` 保留圆形；主题三态 `useAdminTheme()`/`useThemeMode()`。
-- **机制感知准入（先判机制再判类名）**：审样式/命名前，先确认该实现是否已由「主题令牌 / 组件机制 / 构建工具（import-protection / tsc / Biome）」兜底。凡「规则意图已达成、只是实现方式不同」的，**一律不算偏离、不报**——典型如 `rounded-md` 类名 + `--radius-*` 归零、语义令牌映射、`import type` 引 `.server.ts`、shadcn/antd 自带类名、装饰性品牌渐变、邮件模板内联色。
+- **机制感知准入（先判机制再判类名）**：审样式/命名前，先确认该实现是否已由「主题令牌 / 组件机制 / 构建工具（import-protection / tsc / Biome）」兜底。凡「规则意图已达成、只是实现方式不同」的，**一律不算偏离、不报**——典型如 `rounded-md` 类名 + `--radius-*` 归零、语义令牌映射、`import type` 引 `.server.ts`、antd 自带类名、装饰性品牌渐变、邮件模板内联色。
 - **命名面收敛**：禁止硬编码 `hub_*`；Cookie 名走 `src/constants/cookie-names.ts` 集中常量。
 - **代码体积**：函数 >60 行、文件 >600 行即需拆分（按职责拆，禁止压缩排版）。
 
@@ -53,14 +53,14 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
 - **无入参 SFn**：零参调用（`getCurrentAdminSFn()` 等）可省略 `validator`。
 - **装饰性品牌视觉**：AI 功能入口的品牌渐变、`<meta name="theme-color">` SSR 初始值等非状态语义色，属可接受的具名色值。
 - **邮件模板/富文本内联样式**：HTML 邮件与富文本编辑器等客户端不解析令牌，内联色值/样式为跨客户端唯一可靠方案。
-- **shadcn/antd 自带类名**：`@ucode/hub-ui-ssr`/`@ucode/hub-ui-spa` 与 antd 组件类名由宿主 token 注入，属性名/类名不按业务命名规则要求。
+- **antd 自带类名**：`@ucode/hub-ui-spa` 与 antd 组件类名由宿主 token 注入，属性名/类名不按业务命名规则要求。
 
 ## 审查维度（10 维度全量扫描）
 
 #### ① 分层合规 → [architecture](../skills/architecture/SKILL.md)
 - 组件/路由是否直接 import `.server.ts`；`.server.ts` 是否出现在客户端 bundle
 - `services/**` 是否反向 import `routes/**`；`.server.ts` 是否反向 import `.functions.ts`
-- 跨包引用是否走 `@ucode/hub-*` subpath（禁止 `#/*` 跨包）；共享逻辑归属（lib/ui-ssr/ui-spa/services/shared-services/utils）是否正确
+- 跨包引用是否走 `@ucode/hub-*` subpath（禁止 `#/*` 跨包）；共享逻辑归属（lib/ui-spa/services/shared-services/utils）是否正确
 - **lib 准入复核**：`packages/lib/src` 是否出现读 env（`process.env` / `import.meta.env`）、logger 耦合、模块级或 globalThis 单例、框架（React / TanStack Start）或 UI 包依赖、app 私有协议或权限码耦合（`SfnError*` / `AdminAuthError` / `ADMIN_PERMISSIONS`）、反向引用 `#/*`、服务端专属运行时能力；判据是「能否原样移植到另一个 TanStack Start 项目」——`pnpm test` 的 `lib-boundary.test.ts` 已机械覆盖上述模式，人工只复核未被其覆盖的形态（如可变全局对象、以工厂替代单例的写法）
 
 #### ② 路由合规 → [AGENTS.md「路由」章节](../../AGENTS.md)
@@ -74,7 +74,7 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
 - `.functions.ts` 未引用的包装器是否已删（死代码）；路由/组件是否直接从 `.server.ts` 导入
 
 #### ④ 组件合规 → [AGENTS.md「组件约定」章节](../../AGENTS.md)
-- admin/ 下是否混用 Tailwind 同源组件（应 antd）；client/ 下是否混用 antd 同类组件（应 shadcn/ui）
+- 是否自行拼装替代 antd 已有的组件（应直接用 antd），Tailwind 是否只用于布局/间距
 - 表格操作列是否用 `TableOperate`；操作按钮是否统一「图标 + 文字」；颜色是否走语义令牌（`var(--s-*)`）；**圆角按渲染结果**判（`--radius-*` 令牌归零，`rounded-*` 类名不算违规，仅 `rounded-full` 保圆形）
 - `message`/`modal`/`notification` 是否经 `@ucode/hub-ui-spa/antd-static` 导入
 
@@ -90,7 +90,7 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
 
 #### ⑦ 错误处理 → [AGENTS.md「错误处理与通知」](../../AGENTS.md)
 - 7 类静默失败违规（空 catch、吞异常等）；loader/beforeLoad 失败是否有 `errorComponent`
-- 通知分层是否正确（管理端 antd message / 前台 sonner toast）；SFn 是否走统一错误处理（`sfErrorLogger` 自动覆盖）
+- 通知是否统一走 antd message（两端同一个提示器）；SFn 是否走统一错误处理（`sfErrorLogger` 自动覆盖）
 
 #### ⑧ 测试覆盖 → [test-writing](../skills/test-writing/SKILL.md)
 - **仓库级搜索被测符号**：确认每个 `src/services/` / `src/shared-services/` 模块的导出函数在**全仓库**是否有测试（**勿只看模块 `__tests__/`**）。区分两类独立发现：① 全仓库无任何测试 → 真缺覆盖率；② 已有测试但未与被测模块同目录 → 位置漂移（单独记录，勿误报成缺测）
@@ -164,7 +164,7 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
 - `useXxx` 统一；`MemoryCache<T>` 实例只在其所属模块直接操作（懒加载 miss→查库→写缓存→返回）；不重复造轮子
 
 ### 错误处理
-- 管理端 `message/modal/notification` 只经 `@ucode/hub-ui-spa/antd-static`；前台 `sonner toast`；SFn 错误经 `toClientError()` 归一化再抛；禁止吞错静默失败
+- `message/modal/notification` 只经 `@ucode/hub-ui-spa/antd-static`（两端一致）；SFn 错误经 `toClientError()` 归一化再抛；禁止吞错静默失败
 
 ### 样式
 - 颜色仅语义令牌（`var(--s-*)`）；圆角由 `--radius-*` 令牌归零（`rounded-*` 类名允许，仅 `rounded-full` 保圆形）；主题三态 `useAdminTheme()`/`useThemeMode()`

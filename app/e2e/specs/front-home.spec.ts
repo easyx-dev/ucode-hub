@@ -1,15 +1,17 @@
 /**
- * 前台首页 e2e：SSR 输出、Hero 区与 Header 布局
+ * 前台首页 e2e：单页外壳、Hero 区与 Header 布局
  */
 
 import { expect, goto, test } from "../fixtures";
 
 test.describe("前台首页", () => {
-  test("SSR 首屏输出包含站点主标题", async ({ request }) => {
-    const res = await request.get("/");
-    expect(res.ok()).toBeTruthy();
+  test("任意前台路径都回同一份单页外壳", async ({ request }) => {
+    const res = await request.get("/devices");
+    expect(res.status()).toBe(200);
     const html = await res.text();
-    expect(html).toContain("UCode 中继服务");
+    // 外壳只有挂载脚本与占位，不含任何路由内容（内容与布局都由浏览器渲染）
+    expect(html).toContain('type="module"');
+    expect(html).not.toContain("UCode 中继服务");
   });
 
   test("Hero 区标题与副标题可见", async ({ page }) => {

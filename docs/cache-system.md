@@ -79,19 +79,7 @@ SMTP 邮件配置存储于数据库，通过此缓存获取。管理端修改配
 | 加载 | `loadUITranslations()` |
 | 查询 | `getUITranslations(locale)` |
 
-启动时不预热，按 locale 首次访问懒加载；管理端修改翻译后触发局部刷新。归属模块：`src/shared-services/i18n/`（UI 翻译逻辑在 `i18n.ui.server.ts`，实体字段翻译在 `i18n.content.server.ts`）。
-
-### 配置翻译缓存 (`configTranslationCache`)
-
-| 属性 | 值 |
-|------|-----|
-| Key | `locale` |
-| Value | `Record<string, string>`（`{ configId: translatedValue }`） |
-| TTL | 无（永不过期） |
-| 加载 | `getConfigTranslations(locale)`（懒加载回填） |
-| 刷新 | `refreshConfigTranslationCache(locale?)` |
-
-为系统配置项（如站点名称）提供多语言翻译支持，读取 `content_translation` 表 `entity_type = 'system_config'` 的记录。归属模块：`src/shared-services/config/config.server.ts`（非 i18n 模块）。
+启动时不预热，按 locale 首次访问懒加载；管理端修改翻译后触发局部刷新。归属模块：`src/shared-services/i18n/`（UI 翻译逻辑在 `i18n.ui.server.ts`）。
 
 ### 客户端用户缓存 (`clientUserCache`)
 
@@ -202,7 +190,6 @@ Server Function handler
 | `dictCache` | `loadDictCache()` 全量重载 | 字典/条目 CRUD |
 | `configCache` | `loadConfigCache()` 全量重载 | 系统配置 CRUD |
 | `uiTranslationCache` | `refreshUITranslationCache(locale?)` | UI 翻译增删改 |
-| `configTranslationCache` | `refreshConfigTranslationCache(locale?)` | 配置翻译修改 |
 | `clientUserCache` | `clientUserCache.delete(userId)` | 用户状态变更/删除 |
 | `adminUserCache` | `adminUserCache.delete(userId)` | 管理员状态/角色变更/删除 |
 | `trackEventMetaCache` | `invalidateTrackMetaCache()` + 下次懒加载 | 元事件增删改 |
@@ -225,7 +212,7 @@ Server Function handler
 | `packages/lib/src/cache/index.ts` | `MemoryCache<T>` 通用类（`@ucode/hub-lib/cache`） |
 | `services/<module>/<module>.cache.ts` | 按模块拆分的缓存实例（config / dict / i18n / client-auth / admin-auth / track） |
 | `packages/lib/src/cache/__tests__/cache.test.ts` | 缓存单元测试 |
-| `src/shared-services/config/config.server.ts` | `loadConfigCache()` / `getConfigTranslations()` 配置与配置翻译缓存管理 |
+| `src/shared-services/config/config.server.ts` | `loadConfigCache()` 配置缓存管理 |
 | `src/shared-services/dict/dict.server.ts` | `loadDictCache()` / `ensureCache()` 字典缓存管理（懒加载） |
 | `src/shared-services/i18n/i18n.ui.server.ts` | `getUITranslations()` / `refreshUITranslationCache()` UI 翻译缓存管理 |
 | `src/services/client-auth/client-auth.server.ts` | 客户端用户缓存使用 |

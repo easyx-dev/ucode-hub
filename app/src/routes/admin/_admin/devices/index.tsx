@@ -5,10 +5,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { message } from "@ucode/hub-ui-spa/antd-static";
 import { ProTable } from "@ucode/hub-ui-spa/table";
-import { AutofillBlocker } from "@ucode/hub-ui-ssr/form";
 import { Form, Input, Select } from "antd";
 import type { ChangeEvent } from "react";
 import { useCallback, useState } from "react";
+import { AutofillBlocker } from "#/components/AutofillBlocker";
 import {
   AdminFilters,
   AdminFormModal,

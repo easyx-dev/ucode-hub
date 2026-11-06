@@ -40,7 +40,7 @@ export interface SfnErrorInfo {
   details?: SfnErrorDetails;
 }
 
-/** 错误提示器：当前端的错误出口（管理端注入 antd message.error，前台注入 sonner toast.error） */
+/** 错误提示器：两端的错误出口（均由 antd message 注入） */
 export type SfnErrorNotifier = (info: SfnErrorInfo) => void;
 
 /** SFn 错误元数据：由客户端 function 中间件写入，helper / 兜底读取 */

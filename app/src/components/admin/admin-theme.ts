@@ -2,8 +2,8 @@
  * 管理端主题 Context：亮/暗/跟随系统三态模式 + 是否暗色判断
  * 独立文件承载，避免 Context 定义埋在 AdminLayout 中被多处引用
  */
-import type { ThemeMode } from "@ucode/hub-ui-ssr/theme";
 import { createContext, useContext } from "react";
+import type { ThemeMode } from "#/theme/use-theme-mode";
 
 /** Admin 主题 Context 值 */
 interface AdminThemeContextType {

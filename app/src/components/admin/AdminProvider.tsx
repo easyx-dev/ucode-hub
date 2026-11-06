@@ -1,16 +1,15 @@
 /**
- * 管理端提供器
+ * 管理端提供器：antd 装配（棕色主题）+ 主题 Context + 错误提示器 + 登录态与侧边栏布局
  */
-import { StyleProvider } from "@ant-design/cssinjs";
 import { useLocation } from "@tanstack/react-router";
-import { AntdStaticBridge, message } from "@ucode/hub-ui-spa/antd-static";
+import { message } from "@ucode/hub-ui-spa/antd-static";
 import { enableColumnBudgetWarning } from "@ucode/hub-ui-spa/table";
-import { useThemeMode } from "@ucode/hub-ui-ssr/theme";
-import { App, theme as antdTheme, ConfigProvider } from "antd";
-import zhCN from "antd/locale/zh_CN";
 import { useEffect, useMemo } from "react";
+import { AntdAppProvider } from "#/components/providers/antd-app";
 import { SfnErrorNotice } from "#/components/SfnErrorNotice";
+import { DEFAULT_LOCALE } from "#/shared-services/i18n/i18n.types";
 import { ADMIN_THEME } from "#/theme/themes";
+import { useThemeMode } from "#/theme/use-theme-mode";
 import { registerSfnNotifier } from "#/utils/sfn-error";
 import { AdminAuthProvider } from "./AdminAuthProvider";
 import { AdminLayout } from "./AdminLayout";
@@ -21,18 +20,15 @@ if (import.meta.env.DEV) {
   enableColumnBudgetWarning();
 }
 
+/** 无侧边栏外壳的独立页：登录 / 初始化 / 忘记密码 */
+const STANDALONE_PATHS = new Set(["/admin/login", "/admin/init", "/admin/forgot-password"]);
+
 export function AdminProvider({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
-  const pathname = location.pathname;
-  const isStandalone =
-    pathname === "/admin/login" ||
-    pathname === "/admin/init" ||
-    pathname === "/admin/forgot-password";
-  const isAdmin = pathname.startsWith("/admin");
+  const { pathname } = useLocation();
+  const isStandalone = STANDALONE_PATHS.has(pathname);
+  const { mode, setMode, isDark } = useThemeMode(ADMIN_THEME);
 
-  const { mode, setMode, isDark, scheme } = useThemeMode(ADMIN_THEME);
-
-  // 注册管理端错误提示器（antd message）：正面可读消息 + 可展开诊断详情
+  // 错误提示入口：可读消息 + 可展开的诊断详情（管理端与前台共用同一套提示器契约）
   useEffect(
     () =>
       registerSfnNotifier((info) =>
@@ -47,33 +43,16 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const ctxValue = useMemo(() => ({ mode, setMode, isDark }), [mode, setMode, isDark]);
 
   return (
-    <StyleProvider layer>
-      <AdminThemeContext.Provider value={ctxValue}>
-        <ConfigProvider
-          locale={zhCN}
-          theme={{
-            token: {
-              // 品牌主色：随明暗切换（棕亮/棕暗，见主题注册表）
-              colorPrimary: scheme.antdColorPrimary,
-              colorInfo: scheme.antdColorPrimary,
-              // 直角风格：antd 6 borderRadius 归零，派生圆角自动归零
-              borderRadius: 0,
-            },
-            algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-          }}
-        >
-          <App message={{ duration: 5 }} notification={{ duration: 5 }}>
-            <AntdStaticBridge />
-            {!isStandalone && isAdmin ? (
-              <AdminAuthProvider>
-                <AdminLayout>{children}</AdminLayout>
-              </AdminAuthProvider>
-            ) : (
-              children
-            )}
-          </App>
-        </ConfigProvider>
-      </AdminThemeContext.Provider>
-    </StyleProvider>
+    <AdminThemeContext.Provider value={ctxValue}>
+      <AntdAppProvider preset={ADMIN_THEME} locale={DEFAULT_LOCALE}>
+        {isStandalone ? (
+          children
+        ) : (
+          <AdminAuthProvider>
+            <AdminLayout>{children}</AdminLayout>
+          </AdminAuthProvider>
+        )}
+      </AntdAppProvider>
+    </AdminThemeContext.Provider>
   );
 }

@@ -1,12 +1,10 @@
 /**
- * 客户端消息中心页面（SSR）
- * 列表分页展示消息，支持标记已读/删除；含「通知渠道设置」
+ * 客户端消息中心页面：分页展示消息，支持标记已读 / 删除；含「通知渠道设置」
  */
-
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@ucode/hub-ui-ssr/ui";
+import { message } from "@ucode/hub-ui-spa/antd-static";
+import { Button, Card, Empty, Flex, Segmented, Tag, Typography } from "antd";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
 import { NotifyChannelSettings } from "#/components/client/NotifyChannelSettings";
 import { useTranslation } from "#/components/providers";
 import { MESSAGE_TYPE_LABELS } from "#/constants/message-types";
@@ -20,6 +18,10 @@ import {
 } from "#/services/message/message.functions";
 import type { MessageRecord } from "#/services/message/message.server";
 import { sfnUnwrap } from "#/utils/sfn-error";
+
+const PAGE_SIZE = 10;
+
+type StatusFilter = "all" | "unread" | "read";
 
 export const Route = createFileRoute("/messages")({
   beforeLoad: async () => {
@@ -36,13 +38,6 @@ export const Route = createFileRoute("/messages")({
   component: MessagesPage,
 });
 
-const PAGE_SIZE = 10;
-
-/** 消息类型点颜色映射 */
-const TYPE_DOT_COLORS: Record<string, string> = {
-  system: "bg-neutral-400",
-};
-
 function MessagesPage() {
   const { t } = useTranslation();
   const initial = Route.useLoaderData();
@@ -50,18 +45,17 @@ function MessagesPage() {
   const [page, setPage] = useState(initial.result.page);
   const [total, setTotal] = useState(initial.result.total);
   const [unread, setUnread] = useState(initial.unread);
-  const [status, setStatus] = useState<"all" | "unread" | "read">("all");
+  const [status, setStatus] = useState<StatusFilter>("all");
   const [loading, setLoading] = useState(false);
 
-  /** 拉取消息列表 */
-  const load = useCallback(async (p: number, s: typeof status) => {
+  const load = useCallback(async (nextPage: number, nextStatus: StatusFilter) => {
     setLoading(true);
     const [result] = await sfnUnwrap(
       getMyMessagesSFn({
         data: {
-          page: p,
+          page: nextPage,
           pageSize: PAGE_SIZE,
-          status: s === "all" ? undefined : s,
+          status: nextStatus === "all" ? undefined : nextStatus,
         },
       }),
     );
@@ -72,156 +66,143 @@ function MessagesPage() {
     setTotal(result.total);
   }, []);
 
-  /** 刷新未读数 */
   const refreshUnread = useCallback(async () => {
     // 未读数获取失败不阻塞操作，静默处理
-    const [count] = await sfnUnwrap(getMyUnreadCountSFn(), {
-      silent: true,
-    });
+    const [count] = await sfnUnwrap(getMyUnreadCountSFn(), { silent: true });
     if (count === null) return;
     setUnread(count);
   }, []);
 
-  /** 标记单条已读 */
   const handleMarkRead = async (id: string) => {
     const [, err] = await sfnUnwrap(markMyMessageAsReadSFn({ data: { id } }));
     if (err) return;
-    setRecords((prev) => prev.map((r) => (r.id === id ? { ...r, status: "read" } : r)));
+    setRecords((prev) => prev.map((item) => (item.id === id ? { ...item, status: "read" } : item)));
     await refreshUnread();
   };
 
   const handleMarkAllRead = async () => {
     const [, err] = await sfnUnwrap(markAllMyMessagesAsReadSFn());
     if (err) return;
-    setRecords((prev) => prev.map((r) => ({ ...r, status: "read" })));
+    setRecords((prev) => prev.map((item) => ({ ...item, status: "read" })));
     await refreshUnread();
-    toast.success(t("已全部标记为已读"));
+    message.success(t("已全部标记为已读"));
   };
 
   const handleDelete = async (id: string) => {
     const [result] = await sfnUnwrap(deleteMyMessageSFn({ data: { id } }));
-    if (!result) return;
-    if (result.success) {
-      setRecords((prev) => prev.filter((r) => r.id !== id));
-      setTotal((v: number) => Math.max(0, v - 1));
-      await refreshUnread();
-      toast.success(t("已删除"));
-    }
+    if (!result?.success) return;
+    setRecords((prev) => prev.filter((item) => item.id !== id));
+    setTotal((value) => Math.max(0, value - 1));
+    await refreshUnread();
+    message.success(t("已删除"));
   };
 
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
-      <header className="mb-6 flex items-center justify-between gap-3 sm:mb-8">
+    <main className="mx-auto max-w-3xl px-4 py-10 sm:py-12">
+      <Flex align="flex-start" justify="space-between" gap={12} className="mb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          <Typography.Title level={2} className="!mb-2">
             {t("消息中心")}
-          </h1>
-          <div className="mt-2">
-            <NotifyChannelSettings />
-          </div>
+          </Typography.Title>
+          <NotifyChannelSettings />
         </div>
         {unread > 0 && (
-          <Button variant="outline" size="sm" onClick={handleMarkAllRead}>
+          <Button size="small" onClick={() => void handleMarkAllRead()}>
             {t("全部已读")}
           </Button>
         )}
-      </header>
+      </Flex>
 
-      {/* 状态筛选 */}
-      <div className="mb-4 flex items-center gap-2">
-        {(["all", "unread", "read"] as const).map((s) => (
-          <Button
-            key={s}
-            variant={status === s ? "default" : "outline"}
-            size="sm"
-            onClick={() => {
-              setStatus(s);
-              void load(1, s);
-            }}
-          >
-            {s === "all" && t("全部")}
-            {s === "unread" && `${t("未读")}${unread > 0 ? ` (${unread})` : ""}`}
-            {s === "read" && t("已读")}
-          </Button>
-        ))}
-      </div>
+      <Segmented<StatusFilter>
+        className="mb-4"
+        value={status}
+        onChange={(value) => {
+          setStatus(value);
+          void load(1, value);
+        }}
+        options={[
+          { label: t("全部"), value: "all" },
+          { label: `${t("未读")}${unread > 0 ? ` (${unread})` : ""}`, value: "unread" },
+          { label: t("已读"), value: "read" },
+        ]}
+      />
 
-      {/* 消息列表 */}
-      <div className="space-y-3">
-        {records.map((msg) => {
-          return (
-            <Card key={msg.id} className={msg.status === "unread" ? "border-primary/60" : ""}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between gap-3">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    {msg.status === "unread" && (
-                      <span
-                        className={`h-2 w-2 shrink-0 rounded-full ${TYPE_DOT_COLORS[msg.type] ?? "bg-neutral-400"}`}
-                      />
-                    )}
-                    <span className="truncate">{msg.title}</span>
-                  </CardTitle>
-                  <Badge variant="secondary" className="shrink-0 text-xs">
-                    {MESSAGE_TYPE_LABELS[msg.type] ?? msg.type}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-2">
-                {msg.content && (
-                  <p className="text-sm whitespace-pre-wrap text-muted-foreground">{msg.content}</p>
+      <div className="space-y-3" aria-busy={loading}>
+        {records.map((record) => (
+          <Card
+            key={record.id}
+            size="small"
+            title={
+              <Flex align="center" gap={8}>
+                {record.status === "unread" && (
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
                 )}
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <time className="text-xs text-muted-foreground">
-                    {new Date(msg.createdAt).toLocaleString("zh-CN")}
-                  </time>
-                  <div className="flex items-center gap-2">
-                    {msg.status === "unread" && (
-                      <Button variant="ghost" size="sm" onClick={() => void handleMarkRead(msg.id)}>
-                        {t("已读")}
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => void handleDelete(msg.id)}
-                    >
-                      {t("删除")}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                <span className="truncate">{record.title}</span>
+                <Tag>{MESSAGE_TYPE_LABELS[record.type] ?? record.type}</Tag>
+              </Flex>
+            }
+            extra={
+              <Typography.Text type="secondary" className="whitespace-nowrap text-xs">
+                {new Date(record.createdAt).toLocaleString("zh-CN")}
+              </Typography.Text>
+            }
+            actions={[
+              record.status === "unread" ? (
+                <Button
+                  key="read"
+                  type="link"
+                  size="small"
+                  onClick={() => void handleMarkRead(record.id)}
+                >
+                  {t("已读")}
+                </Button>
+              ) : null,
+              <Button
+                key="delete"
+                type="link"
+                size="small"
+                danger
+                onClick={() => void handleDelete(record.id)}
+              >
+                {t("删除")}
+              </Button>,
+            ].filter(Boolean)}
+          >
+            {record.content && (
+              <Typography.Paragraph className="!mb-0 whitespace-pre-wrap" type="secondary">
+                {record.content}
+              </Typography.Paragraph>
+            )}
+          </Card>
+        ))}
+
         {records.length === 0 && !loading && (
-          <div className="py-16 text-center text-sm text-muted-foreground">{t("暂无消息")}</div>
+          <Empty description={t("暂无消息")} className="py-16" />
         )}
       </div>
 
-      {/* 分页 */}
       {total > PAGE_SIZE && (
-        <div className="mt-6 flex items-center justify-center gap-3">
+        <Flex className="mt-6" justify="center" align="center" gap={12}>
           <Button
-            variant="outline"
-            size="sm"
+            size="small"
             disabled={page <= 1 || loading}
             onClick={() => void load(page - 1, status)}
           >
             {t("上一页")}
           </Button>
-          <span className="text-sm text-muted-foreground">
-            {page} / {Math.max(1, Math.ceil(total / PAGE_SIZE))}
-          </span>
+          <Typography.Text type="secondary">
+            {page} / {pageCount}
+          </Typography.Text>
           <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= Math.ceil(total / PAGE_SIZE) || loading}
+            size="small"
+            disabled={page >= pageCount || loading}
             onClick={() => void load(page + 1, status)}
           >
             {t("下一页")}
           </Button>
-        </div>
+        </Flex>
       )}
     </main>
   );
