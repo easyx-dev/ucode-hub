@@ -49,7 +49,7 @@ hub 是 **UCode 的中继服务**：运营方在后台管账号与设备，UCode
 |----|------|------|---------|
 | A 包名面 | workspace 包名 `@ucode/hub-*`、各 package.json、imports、pnpm-lock | 清单替换（全局替换 + `pnpm install` 再生锁文件） | 各 `package.json`、[UPSTREAM.md](../UPSTREAM.md) 命名映射（以代码为准） |
 | B 运行标识面 | **Cookie 名**（`app/src/constants/cookie-names.ts` 集中常量，当前 `hub_admin_token` / `hub_client_token`）、**e2e 库名/账号邮箱**（env 注入） | Cookie 名集中常量（更名点）；e2e 配置 env 化 | `app/src/constants/cookie-names.ts`、`app/e2e/helpers/env.ts`、`app/e2e/helpers/db.ts` |
-| C 部署面 | 容器名（`hub-app` / `hub-db`）、镜像名、部署目录（`/opt/hub/`）、CI 配置 | 清单替换（与交付方绑定） | `docker-compose.yml`、`deploy/docker-compose.yml`（以代码为准） |
+| C 部署面 | 容器名（`hub-app`）、镜像名、部署目录（`/opt/hub/`）、CI 配置 | 清单替换（与交付方绑定） | `docker-compose.yml`（开发）、独立部署仓的 `docker-compose.yml`（生产，以代码为准） |
 | D 品牌面 | 站点名（系统配置，已收敛）、品牌色、主题名、favicon/logo、版权 | 站点名配置化；其余清单替换 | `src/theme/themes.ts` + global.css、系统配置 |
 | E 数据面 | e2e 账号（随 B 收敛）、预置数据默认值 | 配置化 + 清单 | 以代码为准 |
 | F 文档面 | README/docs 中的路径示例 | **中性化占位**（如 `/opt/{项目名}/`） | docs/（本文件为示例） |

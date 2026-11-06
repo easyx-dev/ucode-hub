@@ -121,7 +121,7 @@ packages/
 - **事件埋点**：`track_event` + 元事件/元属性三表；客户端 SDK `src/services/track/track.ts` 自动采集 PageView；服务端校验链：per-session 频控（60 条/分）→ 时间钳制 → 事件/属性名校验 → 值类型校验；BatchWriter 5 秒/100 条/上限 1000；预置 5 元事件（PageView、FormSubmit、Login、Register、Logout）+ 11 元属性（含 7 个 `$` 系统属性，以 `src/services/track/` 为准）→ 详见 [event-tracking](docs/event-tracking.md)
 - **操作日志审计**：`logOperation()` fire-and-forget；SFn 写 CRUD 审计**必须**用同模块 `logCrud()` 一行式封装（自动装配操作人 + targetType 默认值）；审计表只留用户操作，`logOperation` 经独立 BatchWriter（上限 1000）落库；外部系统调用不落审计表，改由 `#/shared-services/external-observability` 的 `logExternalRequest()` 记 pino 日志 + Prometheus 指标（成功日志为 debug，默认 info 下成功仅入指标，排障需 `LOG_LEVEL=debug`）；操作者身份经 request-context（AsyncLocalStorage）注入，requestId 自动从 ALS 捕获落库，进程退出自动刷新
 - **系统初始化**：首次部署自动跳转 `/admin/init`，以 `admin_user.is_root`（数据库部分唯一索引）判断是否已初始化；事务内完成角色 → root 用户 → 系统配置，已初始化后禁止重复操作
-- **环境变量**：模板见 `app/.env.example` 与 `deploy/.env.example`；开发与构建期由 Nitro 以 app 为 root 把 `.env` / `.env.local` 载入 `process.env`，生产由部署声明（见 `deploy/docker-compose.yml`）。**读取与校验统一在 `app/src/env.ts`**：必需项 `DATABASE_URL` / `JWT_SECRET` / `STORAGE_DIR` 缺失或取值非法即拒绝启动（入口在 `app/server.ts` 与 `bootstrap()` 最前调用 `assertEnv()`），业务代码不得再直读 `process.env`（客户端 `src/utils/sfn-error.ts` 例外）；SMTP 邮件配置已迁系统配置表，不再通过环境变量管理
+- **环境变量**：模板见 `app/.env.example` 与部署仓的 `.env.example`；开发与构建期由 Nitro 以 app 为 root 把 `.env` / `.env.local` 载入 `process.env`，生产由部署声明（见部署仓的 `docker-compose.yml`）。**读取与校验统一在 `app/src/env.ts`**：必需项 `DATABASE_URL` / `JWT_SECRET` / `STORAGE_DIR` 缺失或取值非法即拒绝启动（入口在 `app/server.ts` 与 `bootstrap()` 最前调用 `assertEnv()`），业务代码不得再直读 `process.env`（客户端 `src/utils/sfn-error.ts` 例外）；SMTP 邮件配置已迁系统配置表，不再通过环境变量管理
 
 ### 路由
 
@@ -153,7 +153,7 @@ packages/
 - Schema 文件按模块拆分在 `src/db/schema/`，通过 `index.ts` 统一导出
 - 列命名硬规则：主键 `id`、时间 `created_at`/`updated_at`（timestamptz）、软删除 `deleted_at`、描述 `description`、排序 `sort_order`、外键列 `xxx_id`（JS 属性以 `Id` 结尾）；所有列必须显式指定数据库列名，timestamp 必须加 `{ withTimezone: true }`（`operation_log` 历史表为 camelCase 列名例外，见 [database-design](docs/database-design.md)）
 - **jsonb 列必须通过 `.$type<>()` 显式指定 TS 类型**，禁止无类型 `jsonb()`
-- **Schema 变更禁止 `db:push`**，一律走 `pnpm db:generate`（重命名列时交互选 rename）→ 审查生成的 SQL → `pnpm db:migrate`；生产部署由 bootstrap `runMigrations()` 启动时自动执行（**fail-fast：失败即应用启动失败**，由 `deploy/deploy.sh` 等容器健康检查捕获）；本项目为单实例架构，无并发迁移竞态
+- **Schema 变更禁止 `db:push`**，一律走 `pnpm db:generate`（重命名列时交互选 rename）→ 审查生成的 SQL → `pnpm db:migrate`；生产部署由 bootstrap `runMigrations()` 启动时自动执行（**fail-fast：失败即应用启动失败**，由部署仓 `deploy.sh` 的容器健康检查捕获）；本项目为单实例架构，无并发迁移竞态
 - `pnpm db:migrate` 走程序化迁移（`src/db/migrate-cli.ts` 调 `runMigrations()`，与 bootstrap 路径一致），不使用 drizzle-kit migrate 命令
 
 > 完整列命名决策表、表定义模板、迁移流程、常见陷阱 → [db-schema](.agents/skills/db-schema/SKILL.md)

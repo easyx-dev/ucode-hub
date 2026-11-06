@@ -7,10 +7,10 @@
 
 ## 生产环境部署
 
-生产部署内容内联在本仓 `deploy/`（**仓内普通目录，不是 git 子模块**）：生产 compose（SQLite 单文件库，无独立数据库容器，故只有 `hub-app` 一个容器）、一键部署/更新、备份/恢复（库文件用容器内 `VACUUM INTO` 做在线快照）、迁移预检脚本与运维手册；部署目录 `/opt/hub/`，应用数据与库文件同卷（`volumes/app`）。
+生产部署内容在**独立部署仓** `easyx-dev/ucode-hub-deploy`（UCode 仓里以 `hub-deploy` 子模块挂载，本仓不再保留 `deploy/`）：生产 compose（SQLite 单文件库，无独立数据库容器，故只有 `hub-app` 一个容器）、一键部署/更新、备份/恢复（库文件用容器内 `VACUUM INTO` 做在线快照）、迁移预检脚本与运维手册；部署目录 `/opt/hub/`（检出部署仓即部署目录），应用数据与库文件同卷（`volumes/app`）。
 
-- **部署运维手册**（首次部署 / 升级流程 / 回滚 / 定期备份 cron）→ [`deploy/README.md`](../deploy/README.md)
-- 仓内 compose 分两份：`docker-compose.yml` 是开发用（`build:` 从源码构建），`deploy/docker-compose.yml` 是生产用（取已推送的镜像）
+- **部署运维手册**（首次部署 / 升级流程 / 回滚 / 定期备份 cron）→ 部署仓的 `README.md`（[GitHub](https://github.com/easyx-dev/ucode-hub-deploy)）
+- compose 分两份：本仓 `docker-compose.yml` 是开发用（`build:` 从源码构建），部署仓的 `docker-compose.yml` 是生产用（取已推送的镜像）
 
 ### 镜像来源
 
@@ -139,7 +139,7 @@ map $http_upgrade $connection_upgrade { default upgrade; '' close; }
 
 服务端已对回灌响应下发 `X-Accel-Buffering: no`（事件流逐帧），反代侧仍必须关掉自身的缓冲。
 
-上面只列回灌的硬要求。完整的生产样例（`limit_req` 四档限速与 `limit_req_status 429`、HSTS / `X-Frame-Options` / `X-Content-Type-Options` / `Referrer-Policy`、TLS 1.2+ 与限定套件、以及控制面来源收敛建议）见 [`deploy/nginx.conf.example`](../deploy/nginx.conf.example)；那层还要注意 `/health` 与 `/api/metrics` 本身不鉴权，对外暴露时必须一并收窄。
+上面只列回灌的硬要求。完整的生产样例（`limit_req` 四档限速与 `limit_req_status 429`、HSTS / `X-Frame-Options` / `X-Content-Type-Options` / `Referrer-Policy`、TLS 1.2+ 与限定套件、以及控制面来源收敛建议）见部署仓的 `nginx.conf.example`；那层还要注意 `/health` 与 `/api/metrics` 本身不鉴权，对外暴露时必须一并收窄。
 
 ### 已知限制
 
@@ -158,13 +158,13 @@ map $http_upgrade $connection_upgrade { default upgrade; '' close; }
 
 ## 环境变量
 
-环境变量文件位于 `app/` 下（`app/.env`、`app/.env.example`）：开发与构建期由 Nitro 以 app 为 root 把 `.env` / `.env.local` 读入 `process.env`，生产由部署声明（见 `deploy/docker-compose.yml`），CLI 入口（`pnpm db:migrate`）自己读 `.env`。
+环境变量文件位于 `app/` 下（`app/.env`、`app/.env.example`）：开发与构建期由 Nitro 以 app 为 root 把 `.env` / `.env.local` 读入 `process.env`，生产由部署声明（见部署仓的 `docker-compose.yml`），CLI 入口（`pnpm db:migrate`）自己读 `.env`。
 
 | 文件 | 说明 |
 |------|------|
 | `app/.env` | 运行环境变量（不入库） |
 | `app/.env.example` | 环境变量模板（变量清单与说明的事实源） |
-| `deploy/.env.example` | 生产部署变量模板（`DATABASE_URL` / `JWT_SECRET` / `APP_PORT` / `TAG` 与可选变量，compose 直接注入应用） |
+| 部署仓的 `.env.example` | 生产部署变量模板（`DATABASE_URL` / `JWT_SECRET` / `APP_PORT` / `TAG` 与可选变量，compose 直接注入应用） |
 
 **读取与校验统一在 `app/src/env.ts`**（app 内唯一的 `process.env` 读取点，兼作启动期校验），业务代码不得再直读。
 
@@ -184,13 +184,13 @@ map $http_upgrade $connection_upgrade { default upgrade; '' close; }
 
 > 必需项缺失或任一项取值非法（如 `LOG_LEVEL` 不在白名单、`JWT_SECRET` 不足 32 字符）一律拒绝启动，一次报出全部问题；判定规则与默认值都集中在 `app/src/env.ts`。
 
-> **库文件**：单文件库由 `src/db/index.ts` 建（WAL 模式，库文件权限收紧为 `0600`，`-wal` / `-shm` 与主库同目录）。生产里 `DATABASE_URL` 必须落在容器挂载卷内（compose 默认 `./data/data.db`，即宿主 `volumes/app/data.db`）：换路径等于换库，落到卷外则随容器重建丢失。备份与恢复按整文件处理（见 [`deploy/README.md`](../deploy/README.md)）。
+> **库文件**：单文件库由 `src/db/index.ts` 建（WAL 模式，库文件权限收紧为 `0600`，`-wal` / `-shm` 与主库同目录）。生产里 `DATABASE_URL` 必须落在容器挂载卷内（compose 默认 `./data/data.db`，即宿主 `volumes/app/data.db`）：换路径等于换库，落到卷外则随容器重建丢失。备份与恢复按整文件处理（见部署仓 `README.md` 的备份 / 恢复两节）。
 
 SMTP 邮件配置存储于系统配置表，通过 `/admin/config` 页面管理。
 
-> **敏感系统配置加密**：`system_config` 的敏感项（`is_secret`）以 AES-256-GCM 密文入库，读取时解密、管理端列表脱敏、不参与客户端可见配置下发，导出备份也不携带原文。主密钥由 `CONFIG_ENCRYPTION_KEY` 提供，**密钥丢失后已加密的敏感配置无法解密恢复，须妥善备份**；未配置主密钥时读取敏感项会报错（不影响进程启动）。新增变量需同步 `deploy/docker-compose.yml` 的透传。
+> **敏感系统配置加密**：`system_config` 的敏感项（`is_secret`）以 AES-256-GCM 密文入库，读取时解密、管理端列表脱敏、不参与客户端可见配置下发，导出备份也不携带原文。主密钥由 `CONFIG_ENCRYPTION_KEY` 提供，**密钥丢失后已加密的敏感配置无法解密恢复，须妥善备份**；未配置主密钥时读取敏感项会报错（不影响进程启动）。新增变量需同步部署仓 `docker-compose.yml` 的透传。
 
-> **HTTPS 与 Cookie**：生产环境认证 Cookie 默认携带 `Secure` 标志（浏览器仅在 HTTPS 下保存）。线上若尚未启用 HTTPS（http:// 访问），必须在 `.env` 设置 `COOKIE_SECURE=false`，否则登录成功后 token 立即丢失、反复跳回登录页。启用 HTTPS 后应移除该配置或设回 `true`。`deploy/docker-compose.yml` 已透传该变量。
+> **HTTPS 与 Cookie**：生产环境认证 Cookie 默认携带 `Secure` 标志（浏览器仅在 HTTPS 下保存）。线上若尚未启用 HTTPS（http:// 访问），必须在 `.env` 设置 `COOKIE_SECURE=false`，否则登录成功后 token 立即丢失、反复跳回登录页。启用 HTTPS 后应移除该配置或设回 `true`。部署仓的 `docker-compose.yml` 已透传该变量。
 
 ---
 
@@ -433,7 +433,7 @@ GET /health → 200
 
 | 文件 | 职责 |
 |------|------|
-| `deploy/`（仓内目录，非子模块） | 生产部署运维内容（compose、`backup.sh` / `restore.sh` 库文件备份恢复、`preflight-migrations.sh` 迁移预检、`nginx.conf.example` 反代样例） |
+| 独立部署仓 `easyx-dev/ucode-hub-deploy` | 生产部署运维内容（compose、`backup.sh` / `restore.sh` 库文件备份恢复、`preflight-migrations.sh` 迁移预检、`nginx.conf.example` 反代样例） |
 | `server.ts`（app 根目录） | Nitro 服务入口 + HTTP 指标埋点 |
 | `server/routes/api/v1/tunnel.ts` | 隧道宿主（WS 端点：握手、心跳、上线登记、收尾） |
 | `server/middleware/ingress.ts` | ingress：按 Host 认设备的子域回灌（鉴权 / 剥头 / 流式转发） |
@@ -456,7 +456,7 @@ GET /health → 200
 | `src/services/logs/log-reader.ts` | 日志文件读取 |
 | `src/services/logs/logs-cleanup.server.ts` | 过期日志清理 |
 | `app/.env.example` | 环境变量模板（变量清单的事实源） |
-| `deploy/.env.example` | 生产部署变量模板 |
+| 部署仓的 `.env.example` | 生产部署变量模板 |
 | `Dockerfile` | Docker 多阶段构建（构建上下文是本仓库根） |
 | `.dockerignore`（本仓库根） | Docker 构建排除规则 |
 | `docker-compose.yml` | 开发环境 docker compose（build from source） |

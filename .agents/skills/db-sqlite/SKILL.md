@@ -26,7 +26,7 @@ description: >
 | e2e helpers 由 pg 改 node:sqlite 直连 | → [9.5 e2e 改造](#95-e2e-改造3-个文件pg--node-sqlite-文件路径直连) |
 | 迁移前预扫描 / 迁移后校验 / 安全改写脚本 | → [迁移辅助脚本](#102-迁移辅助脚本scriptsdb-migrationts) |
 | 删除旧迁移、重建基线 | → [迁移执行流程](#10-迁移执行流程) |
-| 生产部署适配（deploy/ 目录裁剪） | → [10.1 部署适配](#101-生产部署适配deploy-目录) |
+| 生产部署适配（部署仓 compose / 脚本裁剪） | → [10.1 部署适配](#101-生产部署适配独立部署仓) |
 | node:sqlite 常见报错 | → [常见错误排查](#11-常见错误排查) |
 
 ## 0. 基态与选型
@@ -784,9 +784,9 @@ pnpm --filter @ucode/hub exec tsx ../.agents/skills/db-sqlite/scripts/db-migrati
 
 > `fix` 只改服务端源码的精确形态，测试 mock 里的 `{ rowCount: N }` 等仍需按 §9 手工调整。
 
-### 10.1 生产部署适配（deploy/ 目录）
+### 10.1 生产部署适配（独立部署仓）
 
-切 SQLite 后生产部署**不再需要 PostgreSQL 容器**，`deploy/` 须针对性裁剪（以 `deploy/docker-compose.yml` 与 `deploy/*.sh` 为准）：
+切 SQLite 后生产部署**不再需要 PostgreSQL 容器**，独立部署仓须针对性裁剪（以该仓的 `docker-compose.yml` 与 `*.sh` 为准）：
 
 1. **compose 裁剪**：删除 `db` 服务与 `volumes/db`，仅保留 `app`；`DATABASE_URL` 改指向挂载卷内 SQLite 文件（`./data/data.db`，即 `volumes/app/data.db`），移除 `POSTGRES_*` env，保留 `STORAGE_DIR=/app/data`
 2. **备份/恢复脚本**：

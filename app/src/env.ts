@@ -6,7 +6,7 @@
  * 判定规则都集中在本文件，业务文件不得再出现 `|| ".tmp"` 这类兜底。
  *
  * 环境文件不在本模块加载：开发与构建期由 Nitro 以 app 为 root 把 `.env` / `.env.local` 读入
- * process.env（见 nitro 的 dotenv 选项），生产由部署声明环境变量（见 deploy/docker-compose.yml），
+ * process.env（见 nitro 的 dotenv 选项），生产由部署声明环境变量（见部署仓 ucode-hub-deploy 的 docker-compose.yml），
  * CLI 入口（`pnpm db:migrate`）自己读 `.env`。再加一套加载会让同一变量出现两个来源，故这里只解析与校验。
  *
  * 取值按调用时的 process.env 现读（getter）、不做缓存：进程内只有一份环境表，缓存只会让运行期

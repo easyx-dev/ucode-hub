@@ -39,7 +39,7 @@ description: 数据库迁移至 SQLite：把 hub 的 PostgreSQL 切换为 SQLite
 - [ ] 本仓库 `pnpm check` 通过
 - [ ] 新 SQLite 迁移基线生成且 `db:migrate` 执行成功
 - [ ] CHANGELOG `[infra]` 条目已记录
-- [ ] 生产部署适配（`deploy/` 裁剪 pg 容器，见 skill §10.1）
+- [ ] 生产部署适配（独立部署仓裁剪 pg 容器，见 skill §10.1）
 
 ## 引用关联
 

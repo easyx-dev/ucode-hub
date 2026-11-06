@@ -14,11 +14,13 @@ app/                  # @ucode/hub —— 应用包（TanStack Start + Nitro）�
 packages/lib/         # @ucode/hub-lib —— 纯可复用逻辑库（无 React、零全局态、不读 env/db）
 packages/ui-spa/      # @ucode/hub-ui-spa —— antd 管理端组件
 packages/ui-ssr/      # @ucode/hub-ui-ssr —— shadcn 前台组件
-deploy/               # 生产部署（compose、部署 / 备份脚本、运维手册），是仓内普通目录
 docs/                 # 机制与设计文档
 .agents/              # 规则、skills、commands、checklists
 Dockerfile            # 生产镜像（构建上下文是本仓库根）
 ```
+
+生产部署不在本仓：compose、部署 / 备份脚本与运维手册在独立部署仓
+[`easyx-dev/ucode-hub-deploy`](https://github.com/easyx-dev/ucode-hub-deploy)（UCode 仓里以 `hub-deploy` 子模块挂载）。
 
 `package.json` 只是编排壳（不含依赖、不是工作区包）：脚本一律 `pnpm --filter @ucode/hub …` 转发给 `app/`，
 依赖声明在各子包。工程本体是 `easyx-dev/fsdx` 基座的衍生项目，基线见 [UPSTREAM.md](./UPSTREAM.md)。

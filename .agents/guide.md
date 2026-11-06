@@ -19,7 +19,7 @@
 | 新增管理端 CRUD 模块 | [admin-crud](skills/admin-crud/SKILL.md) |
 | 新增 / 改造管理端页面（列表 / 表格 / 筛选 / 弹窗抽屉 / 表单） | [admin-design](skills/admin-design/SKILL.md)、[docs/admin-design.md](../docs/admin-design.md)、[admin-design 清单](checklists/admin-design.md) |
 | 埋点 / 事件分析 | [docs/event-tracking.md](../docs/event-tracking.md)、`src/services/track/` |
-| 部署 / 定时任务 / 日志 | [docs/deployment-ops.md](../docs/deployment-ops.md)；生产部署运维见 [deploy/README.md](../deploy/README.md)（仓内目录，非 git 子模块） |
+| 部署 / 定时任务 / 日志 | [docs/deployment-ops.md](../docs/deployment-ops.md)；生产部署运维见独立部署仓 [ucode-hub-deploy](https://github.com/easyx-dev/ucode-hub-deploy)（UCode 仓里以 `hub-deploy` 子模块挂载） |
 
 ### 工程流程
 

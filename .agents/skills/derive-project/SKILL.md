@@ -33,7 +33,7 @@ description: >
 |----|------|------|------------------------|
 | A 包名面 | `@ucode/hub-*` 包名、imports、锁文件 | 全局替换 + 再生锁文件 | 各 `package.json` |
 | B 运行标识面 | Cookie 名（集中常量）、e2e 库名/邮箱（env） | Cookie 名改集中常量；e2e 改 env | `app/src/constants/cookie-names.ts`、`app/e2e/helpers/env.ts`、`app/e2e/helpers/db.ts` |
-| C 部署面 | 容器名、镜像名、CI | 清单替换 | `docker-compose.yml`、`deploy/docker-compose.yml`（仓内目录，非子模块） |
+| C 部署面 | 容器名、镜像名、CI | 清单替换 | `docker-compose.yml`（开发）、独立部署仓的 `docker-compose.yml`（生产） |
 | D 品牌面 | 品牌色、主题名、favicon/logo、版权 | 清单替换（站点名走系统配置） | `app/src/theme/themes.ts`、global.css |
 | E 数据面 | e2e 账号（随 B）、预置数据默认值 | 随 B / 按需 | 以代码为准 |
 | F 文档面 | README/docs 路径示例 | 中性占位（默认 `/opt/{项目名}/`） | README、docs/ |
@@ -58,7 +58,7 @@ description: >
 
 ### Step 3：C 部署面
 
-1. `docker-compose.yml` / `deploy/docker-compose.yml`：`container_name`、镜像名（生产编排在仓内 `deploy/`，非子仓库）；
+1. `docker-compose.yml` 与独立部署仓的 `docker-compose.yml`：`container_name`、镜像名（生产编排不在本仓）；
 2. CI：本仓没有镜像构建流水线（仓内无 `.gitlab-ci.yml`），新项目如需接 CI 自行按 `.github/workflows/` 加；
 3. 部署目录（部署脚本里的 `/opt/hub/` 占位，按新项目名与 `DEPLOY_DIR` 改）。
 
