@@ -8,7 +8,7 @@ import { resolve } from "node:path";
 import { DEFAULT_TASK_TIME_ZONE } from "@ucode/hub-lib/date-format";
 import dayjs from "dayjs";
 import { iterateLogLines, normalizeLogLevel, normalizeMessage } from "./log-parse";
-import { getLogDir, listLogFiles } from "./log-reader";
+import { getLogDir, listLogFiles } from "./log-reader.server";
 
 /** 分析时间粒度 */
 export type LogAnalyticsGranularity = "hour" | "day";

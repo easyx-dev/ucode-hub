@@ -9,6 +9,8 @@
  * 静态引入 `*.server.ts` 会被 import-protection 拦下（同 `admin-auth` / `client-auth`）。
  */
 import { createMiddleware } from "@tanstack/react-start";
+import { parseBearerToken } from "#/shared-services/auth/bearer";
+import { failJson } from "#/shared-services/http/json-response";
 import { logger } from "#/shared-services/logger";
 import { runWithRequestContext } from "#/shared-services/request-context";
 import type { UserRef } from "#/types/user";
@@ -39,43 +41,28 @@ export class BearerAuthError extends Error {
   }
 }
 
-/**
- * 从 Authorization 头里取出 Bearer 令牌（纯解析，不校验签名）
- * 缺失、方案不是 Bearer、只有方案没令牌、令牌后还有多余段，都返回 null
- */
-export const parseBearerToken = (header: string | null | undefined): string | null => {
-  if (!header) return null;
-  const [scheme, token, ...rest] = header.trim().split(/\s+/);
-  if (scheme?.toLowerCase() !== "bearer" || !token || rest.length > 0) return null;
-  return token;
-};
+/** Bearer 解析的单一实现在 shared-services/auth/bearer：这里只转出，避免第二份口径 */
+export { parseBearerToken };
 
-/** 校验令牌并定位用户：任一环节不成立都抛 BearerAuthError，未预料异常（如查库失败）原样抛出 */
+/**
+ * 校验令牌并定位用户：任一环节不成立都抛 BearerAuthError，未预料异常（如查库失败）原样抛出。
+ *
+ * 判定本体在 `services/auth/session-token.server`（验签 + 用户可用 + 令牌版本），
+ * 这里只做三件事：从 `Authorization` 头取令牌、动态引入判定模块、把失败映射成 401。
+ * 动态引入是必须的——本文件进客户端模块图，静态引 `*.server.ts` 会被 import-protection 拦下。
+ */
 async function authenticateBearer(request: Request): Promise<BearerAuthContext> {
   const token = parseBearerToken(request.headers.get("authorization"));
   if (!token) throw new BearerAuthError(UNAUTHORIZED_MESSAGE);
 
-  const [{ jwt }, { getAdminUserForAuth }, { getClientUserForAuth }] = await Promise.all([
-    import("#/shared-services/jwt"),
-    import("#/services/admin-auth/admin-auth.server"),
-    import("#/services/client-auth/client-auth.server"),
-  ]);
-
-  const payload = await jwt.verifyToken(token);
-  if (!payload) throw new BearerAuthError(UNAUTHORIZED_MESSAGE);
-
-  const found =
-    payload.userType === "admin"
-      ? await getAdminUserForAuth(payload.userId)
-      : await getClientUserForAuth(payload.userId);
-  if (!found.success) throw new BearerAuthError(UNAUTHORIZED_MESSAGE);
-  // 令牌版本不一致：该会话已被撤销（改密 / 被重置 / 登出），与 Cookie 鉴权同一口径
-  if (found.tokenVersion !== payload.v) throw new BearerAuthError(UNAUTHORIZED_MESSAGE);
+  const { authenticateToken } = await import("#/services/auth/session-token.server");
+  const result = await authenticateToken(token);
+  if (!result.ok) throw new BearerAuthError(UNAUTHORIZED_MESSAGE);
 
   return {
-    user: { type: payload.userType, id: found.id },
-    username: found.username,
-    email: found.email,
+    user: { type: result.user.type, id: result.user.id },
+    username: result.user.username,
+    email: result.user.email,
   };
 }
 
@@ -105,10 +92,7 @@ export const bearerAuthRouteGuard = createMiddleware().server(async ({ request, 
         { pathname: new URL(request.url).pathname, reason: err.message },
         "Bearer 鉴权失败",
       );
-      return new Response(JSON.stringify({ error: err.message }), {
-        status: err.statusCode,
-        headers: { "Content-Type": "application/json" },
-      });
+      return failJson(err.statusCode, err.message);
     }
     throw err;
   }

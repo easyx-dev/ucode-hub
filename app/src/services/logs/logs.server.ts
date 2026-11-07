@@ -10,7 +10,7 @@ import {
   type LogEntry as RawLogEntry,
   getLogDates as readLogDates,
   readLogFileContent,
-} from "./log-reader";
+} from "./log-reader.server";
 
 /** SF 安全的日志条目类型（无 index signature） */
 export interface LogEntry {

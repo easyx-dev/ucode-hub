@@ -11,7 +11,7 @@ vi.mock("#/shared-services/logger", () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-import { getLogDates, queryLogs, readLogFileContent } from "../log-reader";
+import { getLogDates, queryLogs, readLogFileContent } from "../log-reader.server";
 
 let storageDir: string;
 

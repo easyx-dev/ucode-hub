@@ -4,14 +4,14 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../log-reader", () => ({
+vi.mock("../log-reader.server", () => ({
   queryLogs: vi.fn(),
   getLogDates: vi.fn(),
 }));
 
 import { searchLogs } from "#/services/logs/logs.server";
 // 动态导入 log-reader mock 引用
-import { queryLogs } from "../log-reader";
+import { queryLogs } from "../log-reader.server";
 
 describe("searchLogs", () => {
   beforeEach(() => vi.clearAllMocks());

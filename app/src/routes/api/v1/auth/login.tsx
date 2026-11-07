@@ -7,18 +7,13 @@ import { adminLogin } from "#/services/admin-auth/admin-auth.server";
 import { clientLogin } from "#/services/client-auth/client-auth.server";
 import { deviceLoginSchema } from "#/services/device/device.schemas";
 import { isRateLimited, LOGIN_RATE_LIMIT } from "#/services/rate-limit/rate-limit";
+import { failJson } from "#/shared-services/http/json-response";
 import { logger } from "#/shared-services/logger";
 import type { UserType } from "#/types/user";
 
 /** 登录失败与限流的响应文案（对外接口不用封套，失败只给 `{ error }`） */
 const UNAUTHORIZED_MESSAGE = "未认证或凭证无效";
 const RATE_LIMITED_MESSAGE = "操作过于频繁，请稍后再试";
-
-const jsonError = (error: string, status: number): Response =>
-  new Response(JSON.stringify({ error }), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
 
 /** 校验失败回 400：zod 默认文案是英文，只挑出出错字段，不往外吐英文 */
 const invalidParamMessage = (error: ZodError): string => {
@@ -65,7 +60,7 @@ export const Route = createFileRoute("/api/v1/auth/login")({
       POST: async ({ request }) => {
         const body: unknown = await request.json().catch(() => undefined);
         const parsed = deviceLoginSchema.safeParse(body);
-        if (!parsed.success) return jsonError(invalidParamMessage(parsed.error), 400);
+        if (!parsed.success) return failJson(400, invalidParamMessage(parsed.error));
 
         const { username, password } = parsed.data;
         const ip = getRequestIP({ xForwardedFor: true }) ?? "unknown";
@@ -75,13 +70,13 @@ export const Route = createFileRoute("/api/v1/auth/login")({
         const limitedByUser = isRateLimited(`login:user:${username}`, LOGIN_RATE_LIMIT);
         if (limitedByIp || limitedByUser) {
           logger.warn({ ip, username }, "外部客户端登录请求被限流");
-          return jsonError(RATE_LIMITED_MESSAGE, 429);
+          return failJson(429, RATE_LIMITED_MESSAGE);
         }
 
         const account = await loginAsAnyAccount(username, password);
         if (!account) {
           logger.debug({ ip, username }, "外部客户端登录失败");
-          return jsonError(UNAUTHORIZED_MESSAGE, 401);
+          return failJson(401, UNAUTHORIZED_MESSAGE);
         }
 
         return Response.json({

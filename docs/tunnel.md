@@ -42,8 +42,12 @@ app / 其他客户端 ──Bearer <hub 会话>──▶ hub ingress（按 Host 
   `kind` 有四个值：请求方向 / 响应方向 × 字节 / 文本（`Text` 变体表示这一块的语义是 WebSocket 文本帧；
   终端的上行约定就是文本帧，二进制帧会被它忽略）。
 - **流号**：hub 分配、从 1 起、只增不复用；`0` 留给控制帧。
-- **限额**：单帧载荷 `MAX_FRAME_PAYLOAD`(1MB)、单隧道并发流 `MAX_CONCURRENT_STREAMS`(64)、
-  请求头 `MAX_HEADER_BYTES`(32KB)；超限由 hub 回 429（`tunnel_busy`）。
+- **头**：`headers` 是 `Record<string, string | string[]>`，同名多值保持数组——`set-cookie` 按 RFC
+  不能逗号合并（`Expires` 自带逗号），压成一条会让浏览器把多条 cookie 当一条。
+- **限额与状态码**：单帧载荷 `MAX_FRAME_PAYLOAD`(1MB)、单隧道并发流 `MAX_CONCURRENT_STREAMS`(64)、
+  请求头 `MAX_HEADER_BYTES`(32KB)。只有**并发超限**由 hub 回 429（`tunnel_busy`）；路径过长 414、
+  头过大 431。并发上限只在中继侧判定，设备侧不再设第二道闸。
+- **错误码**：`error` / `reject` 帧的 `code` 取自协议词表（`TUNNEL_ERROR_CODES`），不再允许自由字符串。
 - **背压**：发送侧按 WS 缓冲水位（高 4MB / 低 1MB）等待 drain；接收侧对端消费慢时停止读上游，
   两端都不整体缓冲。
 
@@ -56,7 +60,7 @@ app / 其他客户端 ──Bearer <hub 会话>──▶ hub ingress（按 Host 
 | 未认证 | 401 `{"error":"未认证或凭证无效"}` |
 | 设备不属于该用户 | 404 `{"error":"设备不存在或已被删除"}`（与「不存在」同文案，不泄露他人设备） |
 | 设备未连接 | 502 `{"error":"设备未连接","code":"device_offline"}` |
-| 剥掉的请求头 | `cookie`、`authorization`、`host`、`connection`、`x-forwarded-*` |
+| 剥掉的请求头 | `cookie`、`authorization`、`host` 与全部逐跳头（`connection` / `keep-alive` / `proxy-*` / `te` / `trailer` / `transfer-encoding` / `upgrade`），以及 `forwarded` 家族（含 `x-forwarded-*`） |
 | 注入的来源头 | `x-hub-source: tunnel`、`x-hub-device: <设备 id>`、`x-hub-client: <登录用户 id>`（只进日志与统计，不参与鉴权，见 UCode 的 `docs/api.md`） |
 | 前缀形态 | 路径寻址额外注入 `x-hub-base-path: /d/<设备 id>`：UCode 据此改写 `index.html` 的 `<base href>`（资源在产物里是相对路径）。路径不带尾斜杠时先 308 到带尾斜杠的地址 |
 | 流式 | 请求体与响应体逐块转发；响应头先发、SSE 逐帧；公网侧断开时给 UCode 发 `abort` 取消上游 |
@@ -87,7 +91,8 @@ app / 其他客户端 ──Bearer <hub 会话>──▶ hub ingress（按 Host 
 
 ## 验证
 
-阶段 4 的端到端联调（临时端口 + 临时目录，脚本见 `.tmp/hub-e2e/`，不进仓库）：
+阶段 4 的端到端联调结论（临时端口 + 临时目录；协议 v2 时期测得，脚本未随仓库保留）。
+下表是验收口径而不是可直接复现的命令，复跑请用同版本两端，并注意协议 v3 已改动头的多值表达与错误码词表：
 
 | 用例 | 结果 |
 | --- | --- |

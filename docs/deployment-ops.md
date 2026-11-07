@@ -81,7 +81,7 @@ UCode ──WS 出站长连──▶ hub  /api/v1/tunnel
 - **收尾**：连接关闭 / 出错时，这条连接上所有在飞的流逐条失败，公网侧不会悬着。
 - **并发上限**：单条隧道同时在飞的请求上限 64（`MAX_CONCURRENT_STREAMS`），超限由 ingress 回 429。
 
-### ingress（`app/server/middleware/ingress.ts`）
+### ingress（`app/server/middleware/ingress.ts` → `src/services/ingress/`）
 
 两种寻址都当作回灌请求，不进 admin / 前台路由：
 
@@ -146,12 +146,12 @@ map $http_upgrade $connection_upgrade { default upgrade; '' close; }
 - 一台设备只保留一条隧道连接（新连接接管旧的）：多实例客户端会互相顶掉。
 - 分发按连接串行：某条很慢的公网下载会拖慢同一隧道上其它流的响应帧（v1 没有逐流暂停帧）。
 - 不给请求设超时：设备活着却不回包时，该流会一直占着并发额度，直到连接关闭或心跳判死。
-- WebSocket 升级只在路径形态支持（协议 v2）；子域形态的升级请求回 501。
+- WebSocket 升级只在路径形态支持（协议 v3 起；两端须同版本）；子域形态的升级请求回 501。
 - 静态资源先于 ingress 匹配：与 hub 自身 `public/` 同名（`/logo512.png` / `manifest.json` / `robots.txt` 等）
   或与 hub 前端产物同名的路径会被 hub 自己接住，不回灌——设备侧页面不要用这些固定路径。
   路径形态（`/d/<设备 id>/`）把设备页面整个收在前缀下，不受这条影响。
 - 路径形态靠 UCode 服务端按 `x-hub-base-path` 改写 `<base href>`：被访问的实例必须是含该改写的版本，
-  否则页面里的相对资源会落到 hub 自己的路径上。WebSocket 升级同样要设备端是协议 v2 的版本（旧客户端会在
+  否则页面里的相对资源会落到 hub 自己的路径上。WebSocket 升级同样要设备端是协议 v3 的版本（旧客户端会在
   帧结构上对不上：v2 的数据帧多了文本变体、控制帧多了 `close`）。
 
 ---
@@ -436,8 +436,11 @@ GET /health → 200
 | 独立部署仓 `easyx-dev/ucode-hub-deploy` | 生产部署运维内容（compose、`backup.sh` / `restore.sh` 库文件备份恢复、`preflight-migrations.sh` 迁移预检、`nginx.conf.example` 反代样例） |
 | `server.ts`（app 根目录） | Nitro 服务入口 + HTTP 指标埋点 |
 | `server/routes/api/v1/tunnel.ts` | 隧道宿主（WS 端点：握手、心跳、上线登记、收尾） |
-| `server/middleware/ingress.ts` | ingress：按 Host 认设备的子域回灌（鉴权 / 剥头 / 流式转发） |
-| `server/tunnel/*` | 数据面纯逻辑（协议分发、连接注册表、响应桥、背压、请求侧解析） |
+| `server/routes/d/[deviceId]/[...path].ts` | ingress 的 WS 升级入口（通道寻址下的 WebSocket） |
+| `server/middleware/ingress.ts` | ingress 的 HTTP 入口：认设备 → 准入 → 转调 `src/services/ingress/forward` |
+| `server/tunnel/*` | 隧道协议内核（分发 + 流表、连接注册表、背压、WS 桥与关闭码） |
+| `src/services/ingress/*` | ingress 的判定与桥接（准入、请求构造、响应桥、泵、状态码表） |
+| `src/services/model-endpoint/*`、`src/routes/v1/*` | 中继侧模型端点（`/v1/models`、`/v1/chat/completions`） |
 | `src/bootstrap.ts` | 启动初始化（init 注入、迁移、预置、定时任务、优雅关闭） |
 | `src/server.ts` | TanStack Start 服务端入口 |
 | `src/start.ts` | 全局中间件注册（requestId + locale + CSRF + sfErrorLogger） |

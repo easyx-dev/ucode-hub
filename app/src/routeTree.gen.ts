@@ -18,14 +18,17 @@ import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as UsageRouteImport } from './routes/usage'
 import { Route as AdminAdminRouteImport } from './routes/admin/_admin'
 import { Route as ApiMetricsRouteImport } from './routes/api/metrics'
+import { Route as BuiltinManifestRouteImport } from './routes/builtin/manifest'
 import { Route as ForgotPasswordIndexRouteImport } from './routes/forgot-password/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as RegisterIndexRouteImport } from './routes/register/index'
+import { Route as V1ModelsRouteImport } from './routes/v1/models'
 import { Route as AdminAdminIndexRouteImport } from './routes/admin/_admin/index'
 import { Route as AdminForgotPasswordIndexRouteImport } from './routes/admin/forgot-password/index'
 import { Route as AdminInitIndexRouteImport } from './routes/admin/init/index'
 import { Route as AdminLoginIndexRouteImport } from './routes/admin/login/index'
 import { Route as FileRIdRouteImport } from './routes/file/r.$id'
+import { Route as V1ChatCompletionsRouteImport } from './routes/v1/chat/completions'
 import { Route as AdminAdminAdminRolesIndexRouteImport } from './routes/admin/_admin/admin-roles/index'
 import { Route as AdminAdminAiProvidersIndexRouteImport } from './routes/admin/_admin/ai-providers/index'
 import { Route as AdminAdminClientRolesIndexRouteImport } from './routes/admin/_admin/client-roles/index'
@@ -48,6 +51,8 @@ import { Route as ApiV1AuthLoginRouteImport } from './routes/api/v1/auth/login'
 import { Route as ApiV1DevicesListRouteImport } from './routes/api/v1/devices/list'
 import { Route as ApiV1DevicesRegisterRouteImport } from './routes/api/v1/devices/register'
 import { Route as ApiV1DevicesRevokeRouteImport } from './routes/api/v1/devices/revoke'
+import { Route as ApiV1DevicesTunnelTicketRouteImport } from './routes/api/v1/devices/tunnel-ticket'
+import { Route as BuiltinAssetsIdVersionRouteImport } from './routes/builtin/assets/$id.$version'
 import { Route as AdminAdminFileExplorerDownloadSplatRouteImport } from './routes/admin/_admin/file-explorer/download.$'
 import { Route as AdminAdminLogsDownloadIdRouteImport } from './routes/admin/_admin/logs/download.$id'
 import { Route as AdminAdminTrackAnalyticsIndexRouteImport } from './routes/admin/_admin/track/analytics/index'
@@ -100,6 +105,11 @@ const ApiMetricsRoute = ApiMetricsRouteImport.update({
   path: '/api/metrics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BuiltinManifestRoute = BuiltinManifestRouteImport.update({
+  id: '/builtin/manifest',
+  path: '/builtin/manifest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForgotPasswordIndexRoute = ForgotPasswordIndexRouteImport.update({
   id: '/forgot-password/',
   path: '/forgot-password/',
@@ -113,6 +123,11 @@ const LoginIndexRoute = LoginIndexRouteImport.update({
 const RegisterIndexRoute = RegisterIndexRouteImport.update({
   id: '/register/',
   path: '/register/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const V1ModelsRoute = V1ModelsRouteImport.update({
+  id: '/v1/models',
+  path: '/v1/models',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
@@ -139,6 +154,11 @@ const AdminLoginIndexRoute = AdminLoginIndexRouteImport.update({
 const FileRIdRoute = FileRIdRouteImport.update({
   id: '/file/r/$id',
   path: '/file/r/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const V1ChatCompletionsRoute = V1ChatCompletionsRouteImport.update({
+  id: '/v1/chat/completions',
+  path: '/v1/chat/completions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminAdminAdminRolesIndexRoute =
@@ -259,6 +279,17 @@ const ApiV1DevicesRevokeRoute = ApiV1DevicesRevokeRouteImport.update({
   path: '/api/v1/devices/revoke',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1DevicesTunnelTicketRoute =
+  ApiV1DevicesTunnelTicketRouteImport.update({
+    id: '/api/v1/devices/tunnel-ticket',
+    path: '/api/v1/devices/tunnel-ticket',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BuiltinAssetsIdVersionRoute = BuiltinAssetsIdVersionRouteImport.update({
+  id: '/builtin/assets/$id/$version',
+  path: '/builtin/assets/$id/$version',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminAdminFileExplorerDownloadSplatRoute =
   AdminAdminFileExplorerDownloadSplatRouteImport.update({
     id: '/file-explorer/download/$',
@@ -311,10 +342,13 @@ export interface FileRoutesByFullPath {
   '/messages': typeof MessagesRoute
   '/usage': typeof UsageRoute
   '/api/metrics': typeof ApiMetricsRoute
+  '/builtin/manifest': typeof BuiltinManifestRoute
+  '/v1/models': typeof V1ModelsRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
   '/register/': typeof RegisterIndexRoute
   '/file/r/$id': typeof FileRIdRoute
+  '/v1/chat/completions': typeof V1ChatCompletionsRoute
   '/admin/': typeof AdminAdminIndexRoute
   '/admin/forgot-password/': typeof AdminForgotPasswordIndexRoute
   '/admin/init/': typeof AdminInitIndexRoute
@@ -329,6 +363,8 @@ export interface FileRoutesByFullPath {
   '/api/v1/devices/list': typeof ApiV1DevicesListRoute
   '/api/v1/devices/register': typeof ApiV1DevicesRegisterRoute
   '/api/v1/devices/revoke': typeof ApiV1DevicesRevokeRoute
+  '/api/v1/devices/tunnel-ticket': typeof ApiV1DevicesTunnelTicketRoute
+  '/builtin/assets/$id/$version': typeof BuiltinAssetsIdVersionRoute
   '/admin/admin-roles/': typeof AdminAdminAdminRolesIndexRoute
   '/admin/ai-providers/': typeof AdminAdminAiProvidersIndexRoute
   '/admin/client-roles/': typeof AdminAdminClientRolesIndexRoute
@@ -358,10 +394,13 @@ export interface FileRoutesByTo {
   '/messages': typeof MessagesRoute
   '/usage': typeof UsageRoute
   '/api/metrics': typeof ApiMetricsRoute
+  '/builtin/manifest': typeof BuiltinManifestRoute
+  '/v1/models': typeof V1ModelsRoute
   '/forgot-password': typeof ForgotPasswordIndexRoute
   '/login': typeof LoginIndexRoute
   '/register': typeof RegisterIndexRoute
   '/file/r/$id': typeof FileRIdRoute
+  '/v1/chat/completions': typeof V1ChatCompletionsRoute
   '/admin/forgot-password': typeof AdminForgotPasswordIndexRoute
   '/admin/init': typeof AdminInitIndexRoute
   '/admin/login': typeof AdminLoginIndexRoute
@@ -375,6 +414,8 @@ export interface FileRoutesByTo {
   '/api/v1/devices/list': typeof ApiV1DevicesListRoute
   '/api/v1/devices/register': typeof ApiV1DevicesRegisterRoute
   '/api/v1/devices/revoke': typeof ApiV1DevicesRevokeRoute
+  '/api/v1/devices/tunnel-ticket': typeof ApiV1DevicesTunnelTicketRoute
+  '/builtin/assets/$id/$version': typeof BuiltinAssetsIdVersionRoute
   '/admin/admin-roles': typeof AdminAdminAdminRolesIndexRoute
   '/admin/ai-providers': typeof AdminAdminAiProvidersIndexRoute
   '/admin/client-roles': typeof AdminAdminClientRolesIndexRoute
@@ -406,10 +447,13 @@ export interface FileRoutesById {
   '/usage': typeof UsageRoute
   '/admin/_admin': typeof AdminAdminRouteWithChildren
   '/api/metrics': typeof ApiMetricsRoute
+  '/builtin/manifest': typeof BuiltinManifestRoute
+  '/v1/models': typeof V1ModelsRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
   '/register/': typeof RegisterIndexRoute
   '/file/r/$id': typeof FileRIdRoute
+  '/v1/chat/completions': typeof V1ChatCompletionsRoute
   '/admin/_admin/': typeof AdminAdminIndexRoute
   '/admin/forgot-password/': typeof AdminForgotPasswordIndexRoute
   '/admin/init/': typeof AdminInitIndexRoute
@@ -424,6 +468,8 @@ export interface FileRoutesById {
   '/api/v1/devices/list': typeof ApiV1DevicesListRoute
   '/api/v1/devices/register': typeof ApiV1DevicesRegisterRoute
   '/api/v1/devices/revoke': typeof ApiV1DevicesRevokeRoute
+  '/api/v1/devices/tunnel-ticket': typeof ApiV1DevicesTunnelTicketRoute
+  '/builtin/assets/$id/$version': typeof BuiltinAssetsIdVersionRoute
   '/admin/_admin/admin-roles/': typeof AdminAdminAdminRolesIndexRoute
   '/admin/_admin/ai-providers/': typeof AdminAdminAiProvidersIndexRoute
   '/admin/_admin/client-roles/': typeof AdminAdminClientRolesIndexRoute
@@ -455,10 +501,13 @@ export interface FileRouteTypes {
     | '/messages'
     | '/usage'
     | '/api/metrics'
+    | '/builtin/manifest'
+    | '/v1/models'
     | '/forgot-password/'
     | '/login/'
     | '/register/'
     | '/file/r/$id'
+    | '/v1/chat/completions'
     | '/admin/'
     | '/admin/forgot-password/'
     | '/admin/init/'
@@ -473,6 +522,8 @@ export interface FileRouteTypes {
     | '/api/v1/devices/list'
     | '/api/v1/devices/register'
     | '/api/v1/devices/revoke'
+    | '/api/v1/devices/tunnel-ticket'
+    | '/builtin/assets/$id/$version'
     | '/admin/admin-roles/'
     | '/admin/ai-providers/'
     | '/admin/client-roles/'
@@ -502,10 +553,13 @@ export interface FileRouteTypes {
     | '/messages'
     | '/usage'
     | '/api/metrics'
+    | '/builtin/manifest'
+    | '/v1/models'
     | '/forgot-password'
     | '/login'
     | '/register'
     | '/file/r/$id'
+    | '/v1/chat/completions'
     | '/admin/forgot-password'
     | '/admin/init'
     | '/admin/login'
@@ -519,6 +573,8 @@ export interface FileRouteTypes {
     | '/api/v1/devices/list'
     | '/api/v1/devices/register'
     | '/api/v1/devices/revoke'
+    | '/api/v1/devices/tunnel-ticket'
+    | '/builtin/assets/$id/$version'
     | '/admin/admin-roles'
     | '/admin/ai-providers'
     | '/admin/client-roles'
@@ -549,10 +605,13 @@ export interface FileRouteTypes {
     | '/usage'
     | '/admin/_admin'
     | '/api/metrics'
+    | '/builtin/manifest'
+    | '/v1/models'
     | '/forgot-password/'
     | '/login/'
     | '/register/'
     | '/file/r/$id'
+    | '/v1/chat/completions'
     | '/admin/_admin/'
     | '/admin/forgot-password/'
     | '/admin/init/'
@@ -567,6 +626,8 @@ export interface FileRouteTypes {
     | '/api/v1/devices/list'
     | '/api/v1/devices/register'
     | '/api/v1/devices/revoke'
+    | '/api/v1/devices/tunnel-ticket'
+    | '/builtin/assets/$id/$version'
     | '/admin/_admin/admin-roles/'
     | '/admin/_admin/ai-providers/'
     | '/admin/_admin/client-roles/'
@@ -597,14 +658,19 @@ export interface RootRouteChildren {
   MessagesRoute: typeof MessagesRoute
   UsageRoute: typeof UsageRoute
   ApiMetricsRoute: typeof ApiMetricsRoute
+  BuiltinManifestRoute: typeof BuiltinManifestRoute
+  V1ModelsRoute: typeof V1ModelsRoute
   ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
   RegisterIndexRoute: typeof RegisterIndexRoute
   FileRIdRoute: typeof FileRIdRoute
+  V1ChatCompletionsRoute: typeof V1ChatCompletionsRoute
   ApiV1AuthLoginRoute: typeof ApiV1AuthLoginRoute
   ApiV1DevicesListRoute: typeof ApiV1DevicesListRoute
   ApiV1DevicesRegisterRoute: typeof ApiV1DevicesRegisterRoute
   ApiV1DevicesRevokeRoute: typeof ApiV1DevicesRevokeRoute
+  ApiV1DevicesTunnelTicketRoute: typeof ApiV1DevicesTunnelTicketRoute
+  BuiltinAssetsIdVersionRoute: typeof BuiltinAssetsIdVersionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -672,6 +738,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMetricsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/builtin/manifest': {
+      id: '/builtin/manifest'
+      path: '/builtin/manifest'
+      fullPath: '/builtin/manifest'
+      preLoaderRoute: typeof BuiltinManifestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forgot-password/': {
       id: '/forgot-password/'
       path: '/forgot-password'
@@ -691,6 +764,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register/'
       preLoaderRoute: typeof RegisterIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/v1/models': {
+      id: '/v1/models'
+      path: '/v1/models'
+      fullPath: '/v1/models'
+      preLoaderRoute: typeof V1ModelsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/_admin/': {
@@ -726,6 +806,13 @@ declare module '@tanstack/react-router' {
       path: '/file/r/$id'
       fullPath: '/file/r/$id'
       preLoaderRoute: typeof FileRIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/v1/chat/completions': {
+      id: '/v1/chat/completions'
+      path: '/v1/chat/completions'
+      fullPath: '/v1/chat/completions'
+      preLoaderRoute: typeof V1ChatCompletionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/_admin/admin-roles/': {
@@ -882,6 +969,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1DevicesRevokeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/devices/tunnel-ticket': {
+      id: '/api/v1/devices/tunnel-ticket'
+      path: '/api/v1/devices/tunnel-ticket'
+      fullPath: '/api/v1/devices/tunnel-ticket'
+      preLoaderRoute: typeof ApiV1DevicesTunnelTicketRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/builtin/assets/$id/$version': {
+      id: '/builtin/assets/$id/$version'
+      path: '/builtin/assets/$id/$version'
+      fullPath: '/builtin/assets/$id/$version'
+      preLoaderRoute: typeof BuiltinAssetsIdVersionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/_admin/file-explorer/download/$': {
       id: '/admin/_admin/file-explorer/download/$'
       path: '/file-explorer/download/$'
@@ -1022,14 +1123,19 @@ const rootRouteChildren: RootRouteChildren = {
   MessagesRoute: MessagesRoute,
   UsageRoute: UsageRoute,
   ApiMetricsRoute: ApiMetricsRoute,
+  BuiltinManifestRoute: BuiltinManifestRoute,
+  V1ModelsRoute: V1ModelsRoute,
   ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
   RegisterIndexRoute: RegisterIndexRoute,
   FileRIdRoute: FileRIdRoute,
+  V1ChatCompletionsRoute: V1ChatCompletionsRoute,
   ApiV1AuthLoginRoute: ApiV1AuthLoginRoute,
   ApiV1DevicesListRoute: ApiV1DevicesListRoute,
   ApiV1DevicesRegisterRoute: ApiV1DevicesRegisterRoute,
   ApiV1DevicesRevokeRoute: ApiV1DevicesRevokeRoute,
+  ApiV1DevicesTunnelTicketRoute: ApiV1DevicesTunnelTicketRoute,
+  BuiltinAssetsIdVersionRoute: BuiltinAssetsIdVersionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

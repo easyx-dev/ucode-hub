@@ -7,6 +7,7 @@ import { createMiddleware } from "@tanstack/react-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { COOKIE_NAMES } from "#/constants/cookie-names";
 import { type AdminPermissionDef, hasAllAdminPermissions } from "#/permissions/admin-permissions";
+import { failJson } from "#/shared-services/http/json-response";
 import { runWithRequestContext } from "#/shared-services/request-context";
 
 /** 通过中间件注入 handler 的管理端鉴权上下文 */
@@ -111,10 +112,7 @@ export function adminPermRouteGuard(required: AdminPermissionDef | AdminPermissi
       return await runWithAdminOperator(ctx, () => next({ context: ctx }));
     } catch (err) {
       if (err instanceof AdminAuthError) {
-        return new Response(JSON.stringify({ error: err.message }), {
-          status: err.statusCode,
-          headers: { "Content-Type": "application/json" },
-        });
+        return failJson(err.statusCode, err.message);
       }
       throw err;
     }

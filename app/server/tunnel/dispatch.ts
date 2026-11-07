@@ -17,45 +17,62 @@ import {
   type DataFrame,
   MAX_CONCURRENT_STREAMS,
   type ResponseFrame,
+  TUNNEL_ERROR_CODES,
 } from "@ucode/hub-protocol";
 
+import type {
+  StreamFailure,
+  StreamRequest,
+  StreamSink,
+  StreamTransport,
+} from "#/services/ingress/stream-port";
+
+/** 端口形状由消费方（`services/ingress/stream-port`）定义，本模块实现它；这里转出方便 server 内部引用 */
+export type { StreamFailure, StreamRequest, StreamSink, StreamTransport };
+
 /** 一条待转发请求的描述（对应 `request` 控制帧） */
-export type StreamRequest = {
-  method: string;
-  /** 含查询串的原始路径 */
-  path: string;
-  /** 已剥掉调用方凭证与逐跳头的请求头 */
-  headers: Record<string, string>;
-  hasBody: boolean;
-  /** 要转成 WebSocket：应答必须是 101，之后双向发数据帧，直到某一方发 `close` */
-  upgrade?: boolean;
+export type PendingStream = {
+  id: number;
+  sink: StreamSink;
+  /** 首帧响应到达前不接受响应体；升级流在 101 到达前也允许上行 */
+  phase: "awaitingResponse" | "streaming";
+  /** 是否是 WebSocket 升级流 */
+  upgrade: boolean;
 };
 
-/** 出站侧的出口：控制帧与请求体分块（编码与背压在实现方之后） */
-export type StreamTransport = {
-  sendControlFrame(frame: ControlFrame): void;
-  /**
-   * 请求体分块；返回的 promise 在「可以继续送下一块」时 resolve（背压由实现方负责）。
-   * `text` 为真表示这一块是 WebSocket 文本帧的内容。
-   */
-  sendRequestBodyFrame(streamId: number, chunk: Uint8Array, text?: boolean): Promise<void>;
+export type StreamTable = {
+  get(id: number): PendingStream | undefined;
+  has(id: number): boolean;
+  size(): number;
+  add(stream: PendingStream): void;
+  /** 移出并返回；不在表里返回 undefined（收尾幂等靠它） */
+  remove(id: number): PendingStream | undefined;
+  /** 取出全部并清空（连接收尾用） */
+  takeAll(): PendingStream[];
 };
 
-/** 流失败：`code` 取协议错误码或 hub 侧自造码，ingress 据此回 502 */
-export type StreamFailure = {
-  code: string;
-  message: string;
-};
+export const createStreamTable = (): StreamTable => {
+  const streams = new Map<number, PendingStream>();
 
-/** 一条流的消费端；回调可返回 promise（响应流按水位线吊住分发即由此实现） */
-export type StreamSink = {
-  onResponse(status: number, headers: Record<string, string>): void | Promise<void>;
-  /** `text` 为真表示这一块是 WebSocket 文本帧的内容（普通 HTTP 流转发时不会出现） */
-  onBody(chunk: Uint8Array, text?: boolean): void | Promise<void>;
-  onEnd(): void | Promise<void>;
-  onError(failure: StreamFailure): void | Promise<void>;
-  /** 升级流被对端关闭：带 WebSocket 关闭码（普通流不会走到这里） */
-  onClose?(code: number, reason: string | undefined): void | Promise<void>;
+  return {
+    get: (id) => streams.get(id),
+    has: (id) => streams.has(id),
+    size: () => streams.size,
+    add(stream) {
+      streams.set(stream.id, stream);
+    },
+    remove(id) {
+      const stream = streams.get(id);
+      if (!stream) return undefined;
+      streams.delete(id);
+      return stream;
+    },
+    takeAll() {
+      const all = [...streams.values()];
+      streams.clear();
+      return all;
+    },
+  };
 };
 
 export type StreamDispatcher = {
@@ -75,46 +92,42 @@ export type StreamDispatcher = {
   handleControlFrame(frame: ControlFrame): Promise<void>;
   /** 入站数据帧（请求体帧由客户端发来属违规） */
   handleDataFrame(frame: DataFrame): Promise<void>;
-  /** 在飞流数（并发上限与观测用） */
+  /** 在飞流数（观测用） */
   pendingStreamCount(): number;
 };
 
-type PendingStream = {
-  id: number;
-  sink: StreamSink;
-  /** 首帧响应到达前不接受响应体；升级流在 101 到达前也允许上行 */
-  phase: "awaitingResponse" | "streaming";
-  /** 是否是 WebSocket 升级流 */
-  upgrade: boolean;
-};
+/** 对端违约（重复首帧、未开始就结束等）：对外一律是 `invalid_request`，词表里没有单独的「协议错」 */
+const PROTOCOL_ERROR = (message: string): StreamFailure => ({
+  code: TUNNEL_ERROR_CODES.invalidRequest,
+  message,
+});
 
+/**
+ * @param opts.transport - 出站帧的出口。
+ * @param opts.allocateStreamId - 流号分配器：从 1 起、只增不复用（见 `connections.ts`）。
+ */
 export const createStreamDispatcher = (opts: {
   transport: StreamTransport;
-  /** 流号分配器：从 1 起、只增不复用（见 connections.ts） */
   allocateStreamId: () => number;
-  maxStreams?: number;
 }): StreamDispatcher => {
-  const maxStreams = opts.maxStreams ?? MAX_CONCURRENT_STREAMS;
-  const streams = new Map<number, PendingStream>();
+  const table = createStreamTable();
 
+  /** 收尾一条流：先移出表再回调，所以重复调用一定是无操作 */
   const failStream = async (stream: PendingStream, failure: StreamFailure): Promise<void> => {
-    streams.delete(stream.id);
+    table.remove(stream.id);
     await stream.sink.onError(failure);
   };
 
   const respond = async (frame: ResponseFrame): Promise<void> => {
-    const stream = streams.get(frame.id);
+    const stream = table.get(frame.id);
     if (!stream) return;
     if (stream.phase !== "awaitingResponse") {
-      await failStream(stream, { code: "protocol_error", message: "同一条流收到重复的响应首帧" });
+      await failStream(stream, PROTOCOL_ERROR("同一条流收到重复的响应首帧"));
       return;
     }
     // 升级流只认 101：设备侧连不上本机 WebSocket 时用 `error` 帧，不在这里回普通状态码
     if (stream.upgrade && frame.status !== 101) {
-      await failStream(stream, {
-        code: "protocol_error",
-        message: `升级流收到了 ${frame.status} 应答`,
-      });
+      await failStream(stream, PROTOCOL_ERROR(`升级流收到了 ${frame.status} 应答`));
       return;
     }
     stream.phase = "streaming";
@@ -122,34 +135,40 @@ export const createStreamDispatcher = (opts: {
   };
 
   const endStream = async (streamId: number): Promise<void> => {
-    const stream = streams.get(streamId);
+    const stream = table.get(streamId);
     if (!stream) return;
     if (stream.upgrade) {
-      await failStream(stream, {
-        code: "protocol_error",
-        message: "升级流不得以 responseEnd 结束",
-      });
+      await failStream(stream, PROTOCOL_ERROR("升级流不得以 responseEnd 结束"));
       return;
     }
     if (stream.phase !== "streaming") {
-      await failStream(stream, { code: "protocol_error", message: "响应体未开始就收到结束帧" });
+      await failStream(stream, PROTOCOL_ERROR("响应体未开始就收到结束帧"));
       return;
     }
-    streams.delete(streamId);
+    table.remove(streamId);
     await stream.sink.onEnd();
   };
 
-  const failById = async (streamId: number, failure: StreamFailure): Promise<void> => {
-    const stream = streams.get(streamId);
+  const handleClose = async (
+    id: number,
+    code: number,
+    reason: string | undefined,
+  ): Promise<void> => {
+    const stream = table.get(id);
     if (!stream) return;
-    await failStream(stream, failure);
+    if (!stream.upgrade) {
+      await failStream(stream, PROTOCOL_ERROR("普通流不得以 close 结束"));
+      return;
+    }
+    table.remove(id);
+    await stream.sink.onClose?.(code, reason);
   };
 
   return {
     openStream(request, sink) {
-      if (streams.size >= maxStreams) return null;
+      if (table.size() >= MAX_CONCURRENT_STREAMS) return null;
       const id = opts.allocateStreamId();
-      streams.set(id, { id, sink, phase: "awaitingResponse", upgrade: request.upgrade === true });
+      table.add({ id, sink, phase: "awaitingResponse", upgrade: request.upgrade === true });
       opts.transport.sendControlFrame({
         t: "request",
         id,
@@ -162,32 +181,30 @@ export const createStreamDispatcher = (opts: {
       return id;
     },
     async sendRequestBody(streamId, chunk, text) {
-      const stream = streams.get(streamId);
+      const stream = table.get(streamId);
       if (!stream) return false;
       // 普通流早回包就停下上行；升级流是双向的，101 之后还要继续送
       if (!stream.upgrade && stream.phase !== "awaitingResponse") return false;
       await opts.transport.sendRequestBodyFrame(streamId, chunk, text);
-      return streams.has(streamId);
+      return table.has(streamId);
     },
     /** 请求体送完：早回包的流也要发，客户端据此收尾请求体；升级流没有这个边界 */
     endRequest(streamId) {
-      const stream = streams.get(streamId);
+      const stream = table.get(streamId);
       if (!stream || stream.upgrade) return;
       opts.transport.sendControlFrame({ t: "requestEnd", id: streamId });
     },
     closeStream(streamId, code, reason) {
-      if (!streams.delete(streamId)) return;
+      if (!table.remove(streamId)) return;
       opts.transport.sendControlFrame({ t: "close", id: streamId, code, reason });
     },
     abortStream(streamId, reason) {
-      if (!streams.delete(streamId)) return;
+      if (!table.remove(streamId)) return;
       opts.transport.sendControlFrame({ t: "abort", id: streamId, reason });
     },
     failAllStreams(failure) {
-      const pending = [...streams.values()];
-      streams.clear();
       // 连接已断，不再逐个 await：sink 各自按幂等收尾（起回应流已被消费端撤销）
-      for (const stream of pending) void stream.sink.onError(failure);
+      for (const stream of table.takeAll()) void stream.sink.onError(failure);
     },
     async handleControlFrame(frame) {
       switch (frame.t) {
@@ -197,48 +214,46 @@ export const createStreamDispatcher = (opts: {
         case "responseEnd":
           await endStream(frame.id);
           return;
-        case "close": {
-          const stream = streams.get(frame.id);
-          if (!stream) return;
-          if (!stream.upgrade) {
-            await failStream(stream, {
-              code: "protocol_error",
-              message: "普通流不得以 close 结束",
-            });
-            return;
-          }
-          streams.delete(frame.id);
-          await stream.sink.onClose?.(frame.code, frame.reason);
+        case "close":
+          await handleClose(frame.id, frame.code, frame.reason);
+          return;
+        case "error": {
+          const stream = table.get(frame.id);
+          if (stream) await failStream(stream, { code: frame.code, message: frame.message });
           return;
         }
-        case "error":
-          await failById(frame.id, { code: frame.code, message: frame.message });
+        case "abort": {
+          const stream = table.get(frame.id);
+          if (stream) {
+            await failStream(stream, {
+              code: TUNNEL_ERROR_CODES.aborted,
+              message: frame.reason ?? "对端已取消",
+            });
+          }
           return;
-        case "abort":
-          await failById(frame.id, { code: "aborted", message: frame.reason ?? "对端已取消" });
-          return;
+        }
         default:
           return;
       }
     },
     async handleDataFrame(frame) {
-      const stream = streams.get(frame.streamId);
+      const stream = table.get(frame.streamId);
       if (!stream) return;
       if (
         frame.kind !== DATA_FRAME_KINDS.responseBody &&
         frame.kind !== DATA_FRAME_KINDS.responseText
       ) {
-        await failStream(stream, { code: "protocol_error", message: "客户端不得发送请求体帧" });
+        await failStream(stream, PROTOCOL_ERROR("客户端不得发送请求体帧"));
         return;
       }
       if (stream.phase !== "streaming") {
-        await failStream(stream, { code: "protocol_error", message: "响应首帧之前收到响应体" });
+        await failStream(stream, PROTOCOL_ERROR("响应首帧之前收到响应体"));
         return;
       }
       await stream.sink.onBody(frame.payload, frame.kind === DATA_FRAME_KINDS.responseText);
     },
     pendingStreamCount() {
-      return streams.size;
+      return table.size();
     },
   };
 };

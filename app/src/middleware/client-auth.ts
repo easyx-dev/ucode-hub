@@ -7,6 +7,7 @@ import { createMiddleware } from "@tanstack/react-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { COOKIE_NAMES } from "#/constants/cookie-names";
 import { type ClientPermissionDef, hasClientPermission } from "#/permissions/client-permissions";
+import { failJson } from "#/shared-services/http/json-response";
 import { runWithRequestContext } from "#/shared-services/request-context";
 
 /** 通过中间件注入 handler 的客户端用户上下文 */
@@ -106,10 +107,7 @@ export function clientPermRouteGuard(required: ClientPermissionDef) {
       return await runWithClientOperator(ctx, () => next({ context: ctx }));
     } catch (err) {
       if (err instanceof ClientAuthError) {
-        return new Response(JSON.stringify({ error: err.message }), {
-          status: err.statusCode,
-          headers: { "Content-Type": "application/json" },
-        });
+        return failJson(err.statusCode, err.message);
       }
       throw err;
     }

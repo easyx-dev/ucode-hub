@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { normalizeCloseCode, truncateCloseReason } from "../close-code";
+import { normalizeCloseCode, truncateCloseReason } from "../ingress-socket";
 
 describe("normalizeCloseCode", () => {
   it("终端的语义码原样保留", () => {

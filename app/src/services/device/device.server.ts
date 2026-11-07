@@ -3,7 +3,7 @@
  *
  * 归属是 `ownerType` + `ownerId` 的多态写法（同 message），因此「限定属主」的操作一律走
  * `findOwnedDevice`：越权与不存在都报同一句中文文案，不泄露他人设备是否存在。
- * 在线态来自 `device.online` 的内存注册表，这里只负责把它拼进展示结构。
+ * 在线态直接问隧道注册表（唯一事实），这里只负责把它拼进展示结构。
  */
 import { createHash, randomBytes } from "node:crypto";
 
@@ -22,7 +22,7 @@ import {
 import type { PaginatedResult, SortOrder } from "#/types/query";
 import type { UserRef, UserType } from "#/types/user";
 
-import { isDeviceOnline } from "./device.online";
+import { isDeviceOnline, terminateDeviceTunnel } from "./device.online.server";
 
 export type DeviceRecord = typeof device.$inferSelect;
 
@@ -252,6 +252,8 @@ export const revokeDevice = async (params: {
     .where(eq(device.id, row.id))
     .returning();
   if (!updated) throw new Error("设备吊销失败");
+  // 吊销即刻生效：隧道不断，公网侧还能继续用这条已作废的设备
+  terminateDeviceTunnel(row.id);
   const [item] = await decorate([updated]);
   return item ?? toListItem(updated);
 };
@@ -263,6 +265,24 @@ export const deleteDevice = async (params: { id: string; owner?: UserRef }): Pro
     .update(device)
     .set({ deletedAt: new Date(), status: "revoked", revokedAt: new Date(), updatedAt: new Date() })
     .where(eq(device.id, row.id));
+  terminateDeviceTunnel(row.id);
+};
+
+/**
+ * 准入用：设备的归属与状态（不含令牌判定）。
+ *
+ * 单独一个窄查询是刻意的——ingress 只需要「这台设备是谁的、还能不能用」，
+ * 拿整行会把头像、令牌哈希这类无关字段带进热路径。
+ */
+export const findDeviceAccess = async (
+  deviceId: string,
+): Promise<{ ownerType: UserType; ownerId: string; status: DeviceStatus } | null> => {
+  const [row] = await db
+    .select({ ownerType: device.ownerType, ownerId: device.ownerId, status: device.status })
+    .from(device)
+    .where(and(eq(device.id, deviceId), notDeleted(device.deletedAt)))
+    .limit(1);
+  return row ?? null;
 };
 
 /** 按明文令牌反查设备（隧道握手与资产下发用；是否可用由调用方按 `status` 判定） */

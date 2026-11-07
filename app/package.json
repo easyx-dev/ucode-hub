@@ -12,7 +12,6 @@
     "build": "DATABASE_URL=./node_modules/.cache/hub-build/data.db JWT_SECRET=build-time-placeholder-secret-at-least-32-chars STORAGE_DIR=./node_modules/.cache/hub-build vite build",
     "preview": "vite preview",
     "test": "NODE_ENV=test vitest run",
-    "spike": "tsx scripts/spike/run.ts",
     "builtin:publish": "tsx scripts/publish-builtin.ts",
     "e2e": "playwright test",
     "typecheck": "tsc --noEmit",

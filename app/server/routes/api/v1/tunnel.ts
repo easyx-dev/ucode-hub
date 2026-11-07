@@ -10,7 +10,6 @@
  * 连接级控制帧（welcome / reject / ping / pong）直发；入站串行处理，保证同一连接的帧按到达顺序生效。
  */
 import { randomUUID } from "node:crypto";
-
 import {
   type ControlFrame,
   DATA_FRAME_KINDS,
@@ -25,15 +24,15 @@ import {
   TUNNEL_ERROR_CODES,
 } from "@ucode/hub-protocol";
 import { defineWebSocketHandler, type WebSocketMessage, type WebSocketPeer } from "nitro/h3";
-
 import {
   markDeviceOffline,
   markDeviceOnline,
   touchDeviceActivity,
-} from "#/services/device/device.online";
-import { findDeviceByToken } from "#/services/device/device.server";
+} from "#/services/device/device.online.server";
+import { verifyTunnelTicket } from "#/services/device/tunnel-ticket.server";
+import { parseBearerToken } from "#/shared-services/auth/bearer";
+import { failJson } from "#/shared-services/http/json-response";
 import { logger } from "#/shared-services/logger";
-
 import {
   createDrainWaiter,
   createFrameWriter,
@@ -47,7 +46,6 @@ import {
   tunnelRegistry,
 } from "../../../tunnel/connections";
 import type { StreamTransport } from "../../../tunnel/dispatch";
-import { parseBearerToken } from "../../../tunnel/ingress-request";
 
 /** 会话挂在 `peer.context` 上：连接结束随之释放，不需要额外的 map 与清理 */
 const SESSION_KEY = "hubTunnelSession";
@@ -277,21 +275,21 @@ const createSession = (
 };
 
 export default defineWebSocketHandler({
-  /** 升级即鉴权：令牌无效 / 已吊销一律拒绝，连 WS 都不建（对端只看得到状态码） */
+  /**
+   * 升级即鉴权：**只验票据，不查库**。
+   *
+   * 票据由控制面（`POST /api/v1/devices/tunnel-ticket`）签发，签的时候已经判过设备在册且未吊销；
+   * 这里只做签名与载荷校验，因此中继核心不认识 `device` 表，也不认识任何业务服务。
+   */
   async upgrade(request) {
-    const token = parseBearerToken(request.headers.get(DEVICE_AUTH_HEADER));
-    const device = token ? await findDeviceByToken(token) : null;
-    if (device?.status !== "active") {
-      logger.warn({ hasToken: token !== null }, "隧道握手被拒：设备令牌无效或已吊销");
-      return new Response(
-        JSON.stringify({
-          error: "设备令牌无效或已吊销",
-          code: TUNNEL_ERROR_CODES.deviceUnauthorized,
-        }),
-        { status: 401, headers: { "content-type": "application/json; charset=utf-8" } },
-      );
+    const deviceId = await verifyTunnelTicket(
+      parseBearerToken(request.headers.get(DEVICE_AUTH_HEADER)),
+    );
+    if (!deviceId) {
+      logger.warn("隧道握手被拒：票据无效或已过期");
+      return failJson(401, "隧道票据无效或已过期", TUNNEL_ERROR_CODES.deviceUnauthorized);
     }
-    return { context: { deviceId: device.id, connectionId: randomUUID() } };
+    return { context: { deviceId, connectionId: randomUUID() } };
   },
 
   open(peer) {

@@ -17,7 +17,7 @@ type Harness = {
   bodyFrames: DataFrame[];
 };
 
-const createHarness = (maxStreams?: number): Harness => {
+const createHarness = (): Harness => {
   const controlFrames: ControlFrame[] = [];
   const bodyFrames: DataFrame[] = [];
   const dispatcher = createStreamDispatcher({
@@ -31,7 +31,6 @@ const createHarness = (maxStreams?: number): Harness => {
       let last = 0;
       return () => (last += 1);
     })(),
-    maxStreams,
   });
   return { dispatcher, controlFrames, bodyFrames };
 };
@@ -78,14 +77,7 @@ describe("openStream", () => {
     expect(harness.dispatcher.pendingStreamCount()).toBe(1);
   });
 
-  it("到并发上限返回 null（ingress 据此回 429）", () => {
-    const harness = createHarness(2);
-    expect(openStream(harness, createSink())).toBe(1);
-    expect(openStream(harness, createSink())).toBe(2);
-    expect(openStream(harness, createSink())).toBeNull();
-  });
-
-  it("默认上限取协议常量", () => {
+  it("到并发上限返回 null（ingress 据此回 429；上限只由中继侧执行）", () => {
     const harness = createHarness();
     for (let index = 0; index < MAX_CONCURRENT_STREAMS; index += 1) {
       expect(openStream(harness, createSink())).toBe(index + 1);
@@ -190,12 +182,12 @@ describe("handleControlFrame 与 handleDataFrame", () => {
     await harness.dispatcher.handleControlFrame({
       t: "error",
       id: streamId,
-      code: "upstream_failed",
+      code: "local_failed",
       message: "本机服务不可用",
     });
 
     expect(sink.onError).toHaveBeenCalledWith({
-      code: "upstream_failed",
+      code: "local_failed",
       message: "本机服务不可用",
     });
     expect(harness.dispatcher.pendingStreamCount()).toBe(0);
@@ -218,7 +210,7 @@ describe("handleControlFrame 与 handleDataFrame", () => {
     await harness.dispatcher.handleDataFrame(responseBodyFrame(streamId, "too early"));
     expect(sink.onBody).not.toHaveBeenCalled();
     expect(sink.onError).toHaveBeenCalledWith({
-      code: "protocol_error",
+      code: "invalid_request",
       message: expect.stringContaining("响应首帧之前"),
     });
   });
@@ -240,7 +232,7 @@ describe("handleControlFrame 与 handleDataFrame", () => {
       headers: {},
     });
     expect(first.onError).toHaveBeenCalledWith({
-      code: "protocol_error",
+      code: "invalid_request",
       message: expect.stringContaining("重复的响应首帧"),
     });
     expect(first.onEnd).not.toHaveBeenCalled();
@@ -250,7 +242,7 @@ describe("handleControlFrame 与 handleDataFrame", () => {
     if (secondId === null) return;
     await harness.dispatcher.handleControlFrame({ t: "responseEnd", id: secondId });
     expect(second.onError).toHaveBeenCalledWith({
-      code: "protocol_error",
+      code: "invalid_request",
       message: expect.stringContaining("未开始"),
     });
   });
@@ -266,7 +258,7 @@ describe("handleControlFrame 与 handleDataFrame", () => {
       payload: new Uint8Array([1]),
     });
     expect(sink.onError).toHaveBeenCalledWith({
-      code: "protocol_error",
+      code: "invalid_request",
       message: expect.stringContaining("请求体帧"),
     });
   });
@@ -385,7 +377,7 @@ describe("升级流（WebSocket）", () => {
 
     await harness.dispatcher.handleControlFrame({ t: "response", id, status: 200, headers: {} });
     expect(sink.onResponse).not.toHaveBeenCalled();
-    expect(sink.onError.mock.calls[0][0]).toMatchObject({ code: "protocol_error" });
+    expect(sink.onError.mock.calls[0][0]).toMatchObject({ code: "invalid_request" });
   });
 
   it("升级流不得以 responseEnd 结束", async () => {
@@ -396,7 +388,7 @@ describe("升级流（WebSocket）", () => {
     await harness.dispatcher.handleControlFrame({ t: "response", id, status: 101, headers: {} });
     await harness.dispatcher.handleControlFrame({ t: "responseEnd", id });
     expect(sink.onEnd).not.toHaveBeenCalled();
-    expect(sink.onError.mock.calls[0][0]).toMatchObject({ code: "protocol_error" });
+    expect(sink.onError.mock.calls[0][0]).toMatchObject({ code: "invalid_request" });
   });
 
   it("closeStream 发 close 帧并从登记表移除，不再回调 sink", () => {
@@ -426,6 +418,6 @@ describe("升级流（WebSocket）", () => {
 
     await harness.dispatcher.handleControlFrame({ t: "close", id, code: 1000 });
     expect(sink.onClose).not.toHaveBeenCalled();
-    expect(sink.onError.mock.calls[0][0]).toMatchObject({ code: "protocol_error" });
+    expect(sink.onError.mock.calls[0][0]).toMatchObject({ code: "invalid_request" });
   });
 });

@@ -33,6 +33,10 @@ app/                          # @ucode/hub —— 应用 package（业务代码 
     ├── services/             # 业务服务（admin-auth/client-auth/admin-user/file/device/track/tasks/...）
     ├── routes/               # 前台 + /admin 全部路由页面与 SFn
     └── styles/ test-utils/ types/ validators/ utils/
+├── server/                   # Nitro 侧（不进客户端包）：只放「表达不成 Request → Response」的东西
+│   ├── tunnel/               # 隧道协议内核：分发 + 流表、连接注册表、背压、WS 桥与关闭码
+│   ├── middleware/ingress.ts # `/d/<设备 id>` 的 HTTP 分流（必须早于 Router 匹配）
+│   └── routes/               # 三个连接级入口：隧道 WS、ingress WS
 
 packages/
 ├── lib/                      # @ucode/hub-lib —— 纯可复用逻辑库（subpath exports，无根桶，零全局态/不读 env-db/不做日志耦合）
@@ -44,6 +48,56 @@ packages/
 ```
 
 `#/*` 别名仅在 app 内生效（`#/*` → `./src/*`）。跨包引用一律使用 `@ucode/hub-*`（subpath 见各子包 `package.json` 的 exports）。
+
+### `server/` 的判据：只留连接与字节
+
+`server/` 只放**表达不成 `Request → Response` 的东西**，判据两条：
+
+1. **要不要接管连接**：WebSocket upgrade 拿不到裸 socket，只能在 Nitro（`features.websocket`）。
+2. **要不要在 Router 匹配前改变响应形态**：`/d/<设备 id>/…` 是设备侧决定的开放路径集合，且不能套 SPA 外壳。
+
+不满足这两条的一律进 `src/`：
+
+| 内容 | 位置 |
+| --- | --- |
+| 隧道协议内核（帧、流表、注册表、背压、WS 桥） | `server/tunnel/` |
+| 三个连接级入口（隧道 WS、ingress WS、`/d` 分流） | `server/middleware/` + `server/routes/` |
+| ingress 准入 / 请求构造 / 响应桥 / 泵 / 状态码表 | `src/services/ingress/` |
+| 模型端点（鉴权、协议转换、限流、用量） | `src/services/model-endpoint/` + `src/routes/v1/` |
+| 内置资产下发 | `src/routes/builtin/` |
+
+`server/` 内一律不写 `process.env`：环境只从 `src/env.ts` 取（含 `HUB_*` 数据面参数）。
+`server/tunnel/` 不读 DB、不做鉴权：它只认帧与流，类型由 `src/services/ingress/` 传入。
+
+**控制面与数据面的分界：靠短期票据，不靠共享数据库**。设备用长期 `deviceToken` 调
+`POST /api/v1/devices/tunnel-ticket`（控制面，会查库判在册与吊销）换一张 5 分钟有效的票据；
+隧道握手只验这张票（`jwtVerify` + 载荷结构），**不查 `device` 表、不调任何业务服务**。
+所以 `server/` 里不该出现 `db` 或 `src/services/*` 的业务模块——出现就说明有一层绕过了票据。
+
+**在线态用端口，不反向 import**：数据面在模块加载时向 `services/device/device.online.server` 注册
+`DevicePresencePort`（`isOnline` / `terminate`），业务侧只调 `isDeviceOnline` / `terminateDeviceTunnel`。
+方向是 `server/` → `src/`，`src/` 里搜不到 `server/` 的 import（测试除外，那是刻意的跨层集成测试）。
+
+**改隧道请先看端口**：`services/ingress/stream-port.ts` 由消费方定义（请求描述、消费端、出站出口、
+`TunnelPeer`），`server/tunnel/` 实现它。加能力先改端口，再改实现。
+
+**判定层只有一个目录：`src/services/auth/`**。判据是「这个文件只回答能不能放行」：
+
+| 文件 | 回答的问题 |
+| --- | --- |
+| `session-token.server.ts` | 这份会话令牌对应哪个用户、是否已被撤销 |
+| `device-token.server.ts` | 这份设备令牌对应哪台设备、是否可用 |
+| `device-access.ts` | 这个用户能不能访问这台设备 |
+
+入口（页面中间件、Bearer 守卫、ingress 准入、换票、内置资产、模型端点）只负责「取令牌 → 调判定 →
+映射状态码」，不得自行组合 `jwt.verifyToken` + 查用户。判定层不查业务表之外的写入、不发帧、不组装响应；
+需要读归属只调 `services/device` 的窄查询（如 `findDeviceAccess`），不内联 SQL。
+展示层读当前会话（`getCurrentAdmin` / `getCurrentClient`）自带同一口径的版本校验，改其中一处必须同步另一处。
+
+**`.server.ts` 后缀的判据**：文件只要含 Node 专有 API（`node:*`、原生依赖）或需要被 import-protection 拦住，
+就必须带 `.server.ts`——后缀是那道机械防线的开关，漏标等于让客户端可能误引出一个「永远空」的实现
+（`device.online.server.ts` 就是这类：它持有 globalThis 注册表）。
+
 
 > 每个子包的导出清单、API 与宿主集成约束见各自 README：[lib](packages/lib/README.md) / [ui-spa](packages/ui-spa/README.md)，是包边界的权威文档。
 >

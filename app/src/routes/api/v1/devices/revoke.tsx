@@ -4,17 +4,12 @@ import type { ZodError } from "zod";
 import { bearerAuthRouteGuard } from "#/middleware/bearer-auth";
 import { deviceRevokeSchema } from "#/services/device/device.schemas";
 import { revokeDevice } from "#/services/device/device.server";
+import { failJson } from "#/shared-services/http/json-response";
 import { logger } from "#/shared-services/logger";
 import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
 /** 服务层对「不存在」与「不属于自己」回同一句文案（见 `device.server`），这里按文案转 404 */
 const DEVICE_NOT_FOUND_MESSAGE = "设备不存在或已被删除";
-
-const jsonError = (error: string, status: number): Response =>
-  new Response(JSON.stringify({ error }), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
 
 /** 校验失败回 400：zod 默认文案是英文，只挑出出错字段，不往外吐英文 */
 const invalidParamMessage = (error: ZodError): string => {
@@ -29,7 +24,7 @@ export const Route = createFileRoute("/api/v1/devices/revoke")({
       POST: async ({ request, context }) => {
         const body: unknown = await request.json().catch(() => undefined);
         const parsed = deviceRevokeSchema.safeParse(body);
-        if (!parsed.success) return jsonError(invalidParamMessage(parsed.error), 400);
+        if (!parsed.success) return failJson(400, invalidParamMessage(parsed.error));
 
         const { user, username } = context;
         try {
@@ -47,7 +42,7 @@ export const Route = createFileRoute("/api/v1/devices/revoke")({
           return Response.json({ device });
         } catch (err) {
           if (err instanceof Error && err.message === DEVICE_NOT_FOUND_MESSAGE) {
-            return jsonError(DEVICE_NOT_FOUND_MESSAGE, 404);
+            return failJson(404, DEVICE_NOT_FOUND_MESSAGE);
           }
           throw err;
         }

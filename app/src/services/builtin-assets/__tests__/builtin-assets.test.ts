@@ -7,12 +7,6 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { mockFindDeviceByToken } = vi.hoisted(() => ({ mockFindDeviceByToken: vi.fn() }));
-vi.mock("#/services/device/device.server", () => ({
-  findDeviceByToken: mockFindDeviceByToken,
-}));
-
-import { authorizeBuiltinDevice } from "../builtin-assets.auth.server";
 import {
   builtinAssetDir,
   builtinAssetPath,
@@ -313,26 +307,5 @@ describe("createBuiltinBundleStream", () => {
     rmSync(join(dir, "SKILL.md"));
 
     await expect(readBundle(result.asset, dir)).rejects.toThrow(/内容缺失/);
-  });
-});
-
-describe("authorizeBuiltinDevice", () => {
-  it("无令牌 / 非 active 设备都拒，合法设备放行", async () => {
-    const request = (authorization?: string): Request =>
-      new Request("http://hub.test/builtin/manifest", {
-        headers: authorization ? { authorization } : {},
-      });
-
-    expect(await authorizeBuiltinDevice(request())).toBeNull();
-    expect(mockFindDeviceByToken).not.toHaveBeenCalled();
-
-    // 令牌查不到设备（mock 默认返回 undefined）与设备已吊销走同一结果
-    expect(await authorizeBuiltinDevice(request("Bearer abc"))).toBeNull();
-
-    mockFindDeviceByToken.mockResolvedValue({ id: "d1", status: "revoked" });
-    expect(await authorizeBuiltinDevice(request("Bearer abc"))).toBeNull();
-
-    mockFindDeviceByToken.mockResolvedValue({ id: "d1", status: "active" });
-    expect(await authorizeBuiltinDevice(request("bearer abc"))).toMatchObject({ id: "d1" });
   });
 });

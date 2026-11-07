@@ -1,7 +1,7 @@
 # 中继模型端点与用量
 
 > 定位：平台机制类 · 人类阅读
-> 单一事实来源：`app/server/routes/v1/**` 与 `app/server/model-endpoint/**`（端点、转发与限流）、`app/src/services/usage/**` 与 `app/src/db/schema/model-usage.ts`（用量）、`app/src/shared-services/ai/`（厂商配置）
+> 单一事实来源：`app/src/routes/v1/**` 与 `app/src/services/model-endpoint/**`（端点、转发与限流）、`app/src/services/usage/**` 与 `app/src/db/schema/model-usage.ts`（用量）、`app/src/shared-services/ai/`（厂商配置）
 > 引用关系：← 被 README 文档索引与本页「后台页」引用；→ 引用上述代码单一事实来源，上游厂商口径见 UCode 仓库的 [`plans/hub.md`](https://github.com/easyx-dev/ucode/blob/main/plans/hub.md)
 > 更新触发：端点路径与鉴权、转发与超时口径、限流键与阈值、用量字段、厂商配置结构变更时
 
@@ -25,7 +25,7 @@
 | POST | `/v1/chat/completions` | 对话补全，支持 `stream: true`；请求体与响应体均为 OpenAI Chat Completions 形态 |
 | GET | `/v1/models` | 已配置厂商的模型清单，供客户端发现可用模型 |
 
-两个端点走的是 Nitro server route（`app/server/routes/v1/**`），不在 TanStack 路由里，
+两个端点走的是 TanStack 的 server route（`app/src/routes/v1/**`），与页面同一套请求链，
 因此拿得到裸请求与裸响应流——这是「逐帧透传、不整包缓冲」的前提。
 
 ### 请求与响应
@@ -44,7 +44,7 @@
 
 ## 鉴权
 
-`Authorization: Bearer <token>`，令牌只认两种身份（`app/server/model-endpoint/auth.ts`）：
+`Authorization: Bearer <token>`，令牌只认两种身份（`app/src/services/model-endpoint/auth.ts`）：
 
 | 身份 | 令牌 | 记账归属 |
 | --- | --- | --- |
@@ -86,7 +86,7 @@
 
 ## 限流
 
-按**调用方身份**在定长窗口内计数（`app/server/model-endpoint/rate-limit.ts`；计数复用
+按**调用方身份**在定长窗口内计数（`app/src/services/model-endpoint/rate-limit.ts`；计数复用
 `app/src/services/rate-limit/rate-limit.ts` 的通用实现，进程内存即成立）：
 
 | 端点 | 限流键 | 阈值 |

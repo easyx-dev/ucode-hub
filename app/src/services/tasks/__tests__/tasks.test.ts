@@ -35,7 +35,7 @@ const { mockTakeLastSeenUpdates, mockPruneIdleDevices } = vi.hoisted(() => ({
   mockTakeLastSeenUpdates: vi.fn(() => new Map<string, Date>()),
   mockPruneIdleDevices: vi.fn(() => [] as string[]),
 }));
-vi.mock("#/services/device/device.online", () => ({
+vi.mock("#/services/device/device.online.server", () => ({
   takeLastSeenUpdates: mockTakeLastSeenUpdates,
   pruneIdleDevices: mockPruneIdleDevices,
 }));

@@ -77,7 +77,6 @@ UCode（地址是 `/d/<设备 id>/`，与 hub 同源，不另外依赖域名解�
 | [i18n](docs/i18n.md) | 两层翻译模型与写路径 |
 | [admin-design](docs/admin-design.md) | 管理端界面规范 |
 | [deployment-ops](docs/deployment-ops.md) | 部署、迁移、备份与恢复 |
-| [spike](docs/spike.md) | 单进程承载数据面的验证（隧道与 ingress 的边界） |
 | [tunnel](docs/tunnel.md) | 隧道与 ingress（协议、端点、镜像来源头、部署要点） |
 | [builtin-assets](docs/builtin-assets.md) | 内置资产下发（存放布局、清单、两个接口、发布脚本、可执行内容的生效边界） |
 | [model-endpoint](docs/model-endpoint.md) | 模型端点与用量（端点、鉴权、上游解析、流式与 token 口径、限制） |

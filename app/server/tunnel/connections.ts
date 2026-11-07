@@ -6,9 +6,11 @@
  * 被关闭，它在飞的流逐条以「被接管」收尾，公网侧不会悬着。
  *
  * 注册表是**进程内事实**（隧道活在本进程里），挂 `globalThis`：dev / HMR / 产物分包下同一模块
- * 可能被求值多次，注册表必须是同一份（同 `services/device/device.online`）。
+ * 可能被求值多次，注册表必须是同一份（同 `services/device/device.online.server`）。
  */
-import type { ControlFrame } from "@ucode/hub-protocol";
+import { type ControlFrame, TUNNEL_ERROR_CODES } from "@ucode/hub-protocol";
+
+import { registerDevicePresence } from "#/services/device/device.online.server";
 
 import { createStreamDispatcher, type StreamDispatcher, type StreamTransport } from "./dispatch";
 
@@ -123,3 +125,22 @@ const existingRegistry = globalWithRegistry[REGISTRY_KEY];
 /** 进程级注册表（跨 bundle 共享同一份） */
 export const tunnelRegistry: TunnelConnectionRegistry = existingRegistry ?? createTunnelRegistry();
 globalWithRegistry[REGISTRY_KEY] = tunnelRegistry;
+
+// 把「在线」与「断开」交给业务侧：设备列表与吊销只认这两个能力，不 import 本模块
+registerDevicePresence({
+  isOnline: (deviceId) => tunnelRegistry.get(deviceId) !== null,
+  terminate: (deviceId) => {
+    const connection = tunnelRegistry.get(deviceId);
+    if (!connection) return;
+    connection.sendNotice({
+      t: "reject",
+      code: TUNNEL_ERROR_CODES.deviceUnauthorized,
+      message: "设备已被吊销",
+    });
+    connection.dispatcher.failAllStreams({
+      code: TUNNEL_ERROR_CODES.deviceUnauthorized,
+      message: "设备已被吊销",
+    });
+    connection.close(1000, "设备已被吊销");
+  },
+});

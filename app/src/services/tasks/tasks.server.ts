@@ -2,7 +2,7 @@
  * 定时任务注册：在服务启动时调用
  */
 
-import { pruneIdleDevices, takeLastSeenUpdates } from "#/services/device/device.online";
+import { pruneIdleDevices, takeLastSeenUpdates } from "#/services/device/device.online.server";
 import { saveLastSeen } from "#/services/device/device.server";
 import { cleanExpiredFiles } from "#/services/file/file.server";
 import { cleanExpiredLogs } from "#/services/logs/logs-cleanup.server";
