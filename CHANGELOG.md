@@ -8,7 +8,7 @@
 
 **结构**：简体中文，倒序（最新在上），分节用词为 新增 / 变更 / 修复 / 移除。
 
-## [未发布]
+## [0.2.0] - 2026-11-07
 
 ### 新增
 
@@ -20,11 +20,24 @@
 - **隧道协议 v3**：响应头支持同名多值（`set-cookie` 不再被逗号合并）、线上错误码收成统一词表、
   并发上限只由中继侧判定；设备侧需同版本升级（版本不匹配会明确拒绝握手）。
 - 删除了数据面验证用的 spike 脚本与四个隐藏端点（`HUB_SPIKE` 开关随之移除）。
+- 前端改为单页应用：页面请求只返回一份外壳，路由与数据加载都在浏览器里完成（不再服务端渲染）；Server Function 与
+  Server Route 行为不变。抓取首页 HTML 拿不到页面内容，依赖服务端渲染的脚本与 SEO 抓取需另行处理。
+- 组件库统一为 Ant Design + Tailwind：前台也从 shadcn 迁到 antd，管理端与前台共用同一套 Provider 与提示出口。
+- 升级已有部署时，旧库会保留已废弃的 `image_engine_wasm_url`、`ai_translation_prompt`、
+  `ai_translation_batch_prompt` 三行系统配置与角色上的 `file:process` 权限码：代码已不再消费，可在管理端手工清理。
 
 ### 修复
 
 - **经中继访问不再接受已撤销的登录令牌**：ingress 准入补上令牌版本比对，登出 / 改密 / 被重置后
   旧令牌不再能打穿到设备。
+
+### 移除
+
+- 移除 `@ucode/hub-ui-ssr`（shadcn 基础组件、主题切换与验证码弹窗）及 `sonner`、`lucide-react` 依赖：
+  验证码弹窗与自动填充诱饵改由 app 内基于 antd 的实现提供。
+- 管理端移除「实体翻译」（`/admin/translations/content`）及其字段翻译抽屉、`content_translation` 表与相关接口；
+  翻译能力只保留前台 UI 文案（`/admin/translations/ui`）。系统配置值不再按语言区分。
+- 文件管理移除「图片编辑」（裁切 / 压缩 / 覆盖原图）与权限码 `file:process`，移除系统配置项 `image_engine_wasm_url`。
 
 ## [0.1.0] - 2026-11-06
 
@@ -35,11 +48,6 @@
 
 ### 变更
 
-- 前端改为单页应用：页面请求只返回一份外壳，路由与数据加载都在浏览器里完成（不再服务端渲染）；Server Function 与
-  Server Route 行为不变。抓取首页 HTML 拿不到页面内容，依赖服务端渲染的脚本与 SEO 抓取需另行处理。
-- 组件库统一为 Ant Design + Tailwind：前台也从 shadcn 迁到 antd，管理端与前台共用同一套 Provider 与提示出口。
-- 升级已有部署时，旧库会保留已废弃的 `image_engine_wasm_url`、`ai_translation_prompt`、
-  `ai_translation_batch_prompt` 三行系统配置与角色上的 `file:process` 权限码：代码已不再消费，可在管理端手工清理。
 - **[infra] 生产镜像由 CI 构建推送**：`v*` tag 触发 `.github/workflows/image.yml`，推到
   `ghcr.io/easyx-dev/ucode-hub`（版本 tag + `latest`）；生产部署仓按 `TAG` 拉取，不再需要人工构建推送。
 - **[infra] 数据库由 PostgreSQL 改为 SQLite**：不再需要数据库容器，数据落在应用数据目录的单文件里
@@ -58,11 +66,6 @@
 
 ### 移除
 
-- 移除 `@ucode/hub-ui-ssr`（shadcn 基础组件、主题切换与验证码弹窗）及 `sonner`、`lucide-react` 依赖：
-  验证码弹窗与自动填充诱饵改由 app 内基于 antd 的实现提供。
-- 管理端移除「实体翻译」（`/admin/translations/content`）及其字段翻译抽屉、`content_translation` 表与相关接口；
-  翻译能力只保留前台 UI 文案（`/admin/translations/ui`）。系统配置值不再按语言区分。
-- 文件管理移除「图片编辑」（裁切 / 压缩 / 覆盖原图）与权限码 `file:process`，移除系统配置项 `image_engine_wasm_url`。
 - 系统配置项 `custom_head_config`（自定义 head 注入）与其渲染逻辑。
 - `pg` / `@types/pg` 依赖，以及 `deploy/` 下的数据库容器、`pg_dump` / `pg_restore` 相关流程。
 
